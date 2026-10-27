@@ -1,0 +1,54 @@
+{
+  "id": "handel",
+  "name": "Handel",
+  "beschreibung": "Lager, Kommissionierung und Inventur",
+  "prozesse": [
+    {
+      "id": "lager",
+      "name": "Lager und Inventur",
+      "schritte": [
+        { "id": "einlagern", "name": "Ware einlagern" },
+        { "id": "bestand", "name": "Bestand führen und nachbestellen" },
+        { "id": "inventur", "name": "Inventur zählen" },
+        { "id": "bewerten", "name": "Inventur bewerten" }
+      ]
+    }
+  ],
+  "einhaengen": [
+    { "prozess": "o2c", "nach": "auftrag", "schritte": [{ "id": "kommissionieren", "name": "Kommissionieren und versenden" }] },
+    { "prozess": "p2p", "nach": "wareneingang", "schritte": [{ "id": "wareneingang-buchen", "name": "Wareneingang im Bestand buchen" }] }
+  ],
+  "datenobjekte": [
+    { "id": "lagerbestand", "name": "Lagerbestand", "art": "bewegung" },
+    { "id": "inventurlisten", "name": "Inventurlisten", "art": "bewegung" }
+  ],
+  "software": [
+    {
+      "id": "jtl-wawi",
+      "name": "JTL-Wawi",
+      "kategorie": "Warenwirtschaft",
+      "art": "lokal",
+      "zweck": "Artikel, Lager, Aufträge und Versand im Handel",
+      "aufgaben": [
+        { "id": "artikel", "name": "Artikel und Preise pflegen", "rolle": "Einkauf", "haeufigkeit": "woechentlich", "liest": ["lieferanten"], "schreibt": ["artikel"], "schritt": "lager:bestand" },
+        { "id": "bestellen", "name": "Ware beim Lieferanten bestellen", "rolle": "Einkauf", "haeufigkeit": "woechentlich", "liest": ["lieferanten", "lagerbestand"], "schreibt": [], "schritt": "p2p:bestellen" },
+        { "id": "wareneingang", "name": "Wareneingang buchen", "rolle": "Lager", "haeufigkeit": "taeglich", "liest": ["artikel"], "schreibt": ["lagerbestand"], "schritt": "p2p:wareneingang-buchen" },
+        { "id": "auftrag", "name": "Aufträge erfassen", "rolle": "Vertrieb", "haeufigkeit": "taeglich", "liest": ["kunden", "artikel"], "schreibt": ["auftraege"], "schritt": "o2c:auftrag" },
+        { "id": "versand", "name": "Kommissionieren und versenden", "rolle": "Lager", "haeufigkeit": "taeglich", "liest": ["auftraege"], "schreibt": ["lagerbestand"], "schritt": "o2c:kommissionieren" },
+        { "id": "rechnung", "name": "Ausgangsrechnungen erzeugen", "rolle": "Vertrieb", "haeufigkeit": "taeglich", "liest": ["auftraege", "kunden"], "schreibt": ["ausgangsrechnungen"], "schritt": "o2c:rechnung" },
+        { "id": "inventur", "name": "Inventur erfassen", "rolle": "Lager", "haeufigkeit": "jaehrlich", "liest": ["lagerbestand"], "schreibt": ["inventurlisten"], "schritt": "lager:inventur" }
+      ]
+    },
+    {
+      "id": "excel-inventur",
+      "name": "Inventurliste (Excel)",
+      "kategorie": "Excel-Liste",
+      "art": "excel",
+      "zweck": "Zählliste und Bewertung der Inventur",
+      "aufgaben": [
+        { "id": "zaehlen", "name": "Inventur zählen und eintragen", "rolle": "Lager", "haeufigkeit": "jaehrlich", "liest": ["artikel"], "schreibt": ["inventurlisten"], "schritt": "lager:inventur" },
+        { "id": "bewerten", "name": "Inventur bewerten", "rolle": "Buchhaltung", "haeufigkeit": "jaehrlich", "liest": ["inventurlisten", "artikel"], "schreibt": ["inventurlisten"], "schritt": "lager:bewerten" }
+      ]
+    }
+  ]
+}

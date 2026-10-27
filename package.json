@@ -1,0 +1,14 @@
+{
+  "name": "software-landkarte",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Software- und Prozesslandkarte für Mandanten: one offline HTML file for the tax office and its clients.",
+  "license": "UNLICENSED",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "example": "node scripts/beispiel.js && node scripts/build.js",
+    "test": "node scripts/build.js && node --test \"test/**/*.test.js\"",
+    "test:unit": "node --test \"test/*.test.js\""
+  },
+  "engines": { "node": ">=20" }
+}

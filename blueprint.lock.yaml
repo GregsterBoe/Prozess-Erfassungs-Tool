@@ -1,0 +1,171 @@
+# Which version of each blueprint item is built where. Written by the build session;
+# checked from the knowledge base with:
+#   python -m kb blueprint software-landkarte.blueprint --check ../Prozess-Erfassungs-Tool
+blueprint: software-landkarte.blueprint
+knowledge_base: main
+built: '2026-10-27'
+units:
+  software-landkarte.d.anwendungsfall:
+    fp: 31bb0ca78d
+    files: [src/core.js, examples/beispielbetrieb.json, scripts/beispiel.js]
+    tests:
+      - "test/model.test.js::zielbild: the changeover list says what moves, which flows need an interface, what can be switched off"
+  software-landkarte.d.werkzeugform:
+    fp: b6f9bc9b96
+    files: [src/index.html, src/app.js, src/styles.css, scripts/build.js, dist/software-landkarte.html]
+    tests:
+      - "test/e2e/app.test.js::durchgang: the client file shows only the walkthrough"
+      - "test/e2e/app.test.js::lokal: opens from file:// without login and makes no network request through a full session"
+  software-landkarte.d.katalog:
+    fp: c27dc57923
+    files: [catalog/software.json, src/core.js, src/app.js]
+    tests:
+      - "test/catalog.test.js::the shipped catalog, core and every module are valid"
+      - "test/model.test.js::aufgaben: a catalog system proposes its typical tasks, each can be switched off and on"
+  software-landkarte.d.aufgabentiefe:
+    fp: 89901be138
+    files: [src/core.js, src/app.js]
+    tests:
+      - "test/model.test.js::aufgaben: a task can be split into steps where needed (two levels)"
+  software-landkarte.d.prozessbildung:
+    fp: 57c6d548f0
+    files: [catalog/prozesse.json, modules/handwerk.json, modules/handel.json, modules/ladengeschaeft.json, src/core.js]
+    tests:
+      - "test/catalog.test.js::a module brings processes, inserts steps at named points and suggests objects and software"
+      - "test/catalog.test.js::a module can hide core steps; with several modules a step hides only if all hide it"
+  software-landkarte.d.darstellung:
+    fp: ec7db54436
+    files: [src/report.js, src/app.js, src/core.js]
+    tests:
+      - "test/model.test.js::prozesse: per process a swimlane shows which task runs in which system in which order, media breaks marked"
+      - "test/e2e/app.test.js::bericht: printable on A4 without cut-off tables, even with 15 systems"
+  software-landkarte.d.zielbild:
+    fp: 660a942473
+    files: [src/core.js, src/app.js, src/report.js]
+    tests:
+      - "test/model.test.js::zielbild: per task wandert, bleibt, entfällt, unklar; per object the future leading system"
+  software-landkarte.d.ergebnisformat:
+    fp: da46b835bc
+    files: [src/core.js, src/report.js, src/app.js]
+    tests:
+      - "test/model.test.js::csv: matrix and task list for Excel, semicolon separated and safely quoted"
+      - "test/e2e/app.test.js::bericht and export: CSV for Excel and JSON are produced in the browser"
+  software-landkarte.d.codebasis:
+    fp: c4e603caa6
+    files: [package.json, README.md]
+    tests: []
+  software-landkarte.r.lokal:
+    fp: 90cff3a046
+    files: [src/index.html, scripts/build.js, dist/software-landkarte.html, src/report.js]
+    tests:
+      - "test/e2e/app.test.js::lokal: opens from file:// without login and makes no network request through a full session"
+      - "test/e2e/app.test.js::lokal: a Content-Security-Policy forbids every connection"
+      - "test/model.test.js::bericht: the standalone file needs no server and loads nothing"
+    manual: Chromium is tested automatically; Firefox, Safari and Edge by hand before a release (README, Checked by hand).
+  software-landkarte.r.keine-mandantendaten:
+    fp: e7fcf8c13b
+    files: [.gitignore, examples/beispielbetrieb.json, scripts/beispiel.js, src/core.js]
+    tests:
+      - "test/model.test.js::keine-mandantendaten: tests and examples use an invented business, people appear as roles"
+      - "test/model.test.js::keine-mandantendaten: result files are excluded by .gitignore"
+  software-landkarte.r.systeme:
+    fp: 5cce1b6588
+    files: [src/core.js, src/app.js, catalog/software.json]
+    tests:
+      - "test/model.test.js::systeme: a system has name, kind, purpose and roles; all five kinds exist"
+      - "test/model.test.js::systeme: chosen from the catalog or created freely"
+      - "test/model.test.js::systeme: Excel lists, paper and mailboxes appear on the map like any software"
+      - "test/e2e/app.test.js::systeme and aufgaben: choose from the catalog, switch proposals off, add own system and task"
+  software-landkarte.r.aufgaben:
+    fp: cea01d5f32
+    files: [src/core.js, src/app.js, catalog/software.json]
+    tests:
+      - "test/model.test.js::aufgaben: a catalog system proposes its typical tasks, each can be switched off and on"
+      - "test/model.test.js::aufgaben: a task has name, system, role, frequency and the objects it reads and writes"
+      - "test/model.test.js::aufgaben: own tasks can be created freely"
+      - "test/model.test.js::aufgaben: a task can be split into steps where needed (two levels)"
+  software-landkarte.r.mandanten-durchgang:
+    fp: fee3b49bef
+    files: [src/core.js, src/app.js]
+    tests:
+      - "test/model.test.js::durchgang: one card per system and per task, then the closing question"
+      - "test/model.test.js::durchgang: reading the result back marks deviations, additions and \"unsicher\""
+      - "test/e2e/app.test.js::durchgang: the client file shows only the walkthrough"
+      - "test/e2e/app.test.js::durchgang: answer, deviate with text, unsure, go back, take back, add, save, read back in the office"
+      - "test/e2e/app.test.js::durchgang: works by touch"
+  software-landkarte.r.datenobjekte:
+    fp: 49e8fe076b
+    files: [src/core.js, src/app.js, src/report.js, catalog/software.json]
+    tests:
+      - "test/model.test.js::datenobjekte: the catalog proposes the common objects; own ones are possible"
+      - "test/model.test.js::datenobjekte: per object and system exactly one of führt, liest, Kopie, nicht vorhanden"
+      - "test/model.test.js::datenobjekte: more than one leading system is double maintenance, none is a gap; both in the report"
+  software-landkarte.r.datenfluesse:
+    fp: 799513450d
+    files: [src/core.js, src/app.js, src/report.js]
+    tests:
+      - "test/model.test.js::datenfluesse: a flow joins two systems for one object, with kind and frequency"
+      - "test/model.test.js::datenfluesse: writing an object into a system that does not lead it proposes a flow from the leader"
+      - "test/model.test.js::datenfluesse: manual and paper flows are media breaks and listed in the report"
+  software-landkarte.r.prozesse:
+    fp: a0fbfa641b
+    files: [src/core.js, src/app.js, src/report.js]
+    tests:
+      - "test/model.test.js::prozesse: every task can be assigned to a process and ordered in it"
+      - "test/model.test.js::prozesse: per process a swimlane shows which task runs in which system in which order, media breaks marked"
+      - "test/model.test.js::prozesse: tasks without a process are visible as such"
+      - "test/e2e/app.test.js::prozesse: reorder in a process and assign the tasks without one"
+  software-landkarte.r.bericht:
+    fp: 7596b8f37e
+    files: [src/report.js, src/app.js]
+    tests:
+      - "test/model.test.js::bericht: findings first, then map, processes, systems and tasks"
+      - "test/model.test.js::zielbild: the changeover list says what moves, which flows need an interface, what can be switched off"
+      - "test/e2e/app.test.js::bericht: printable on A4 without cut-off tables, even with 15 systems"
+      - "test/model.test.js::bericht: the standalone file needs no server and loads nothing"
+  software-landkarte.r.zwischenstand:
+    fp: 821aa937fd
+    files: [src/core.js, src/app.js]
+    tests:
+      - "test/e2e/app.test.js::zwischenstand: survives closing the browser, saves to a versioned file and reopens"
+      - "test/model.test.js::zwischenstand: the result file carries a format version and reopens unchanged"
+      - "test/model.test.js::zwischenstand: after a changeover the old map is the starting point of the new one"
+  software-landkarte.r.zielbild:
+    fp: 24926df3e7
+    files: [src/core.js, src/app.js, src/report.js]
+    tests:
+      - "test/model.test.js::zielbild: a system can be marked as the new target system"
+      - "test/model.test.js::zielbild: per task wandert, bleibt, entfällt, unklar; per object the future leading system"
+      - "test/model.test.js::zielbild: the changeover list says what moves, which flows need an interface, what can be switched off"
+      - "test/e2e/app.test.js::zielbild: decisions per task and object, changeover list, current and target side by side, adopt as new map"
+  software-landkarte.r.prozess-baukasten:
+    fp: 1f26ec356f
+    files: [catalog/prozesse.json, modules/handwerk.json, modules/handel.json, modules/ladengeschaeft.json, src/core.js, scripts/build.js]
+    tests:
+      - "test/catalog.test.js::the core has the four standard processes, each with ordered steps"
+      - "test/catalog.test.js::a module brings processes, inserts steps at named points and suggests objects and software"
+      - "test/catalog.test.js::a module cannot rename or delete core steps"
+      - "test/catalog.test.js::the office chooses one or more modules; only their processes and steps show"
+      - "test/catalog.test.js::a new module comes in without a code change: drop a JSON file into modules/"
+      - "test/catalog.test.js::every module file on its own: required fields, unique ids, valid insertion points"
+      - "test/catalog.test.js::at least two example modules ship: Handwerk and Handel"
+      - "test/model.test.js::prozess-baukasten: the tool proposes the process from the catalog step pointer"
+      - "test/e2e/app.test.js::prozess-baukasten: choosing a module shows its processes, removing it hides them"
+  software-landkarte.r.durchgangsdauer:
+    fp: 4e3a59eb08
+    files: [src/app.js, examples/beispielbetrieb.json]
+    tests:
+      - "test/e2e/app.test.js::durchgangsdauer: 8 systems and 25 tasks; a progress bar shows what is left"
+    manual: The 20-minute limit is measured with a test person on the example (README, Checked by hand); not done yet.
+  software-landkarte.r.katalog-pflege:
+    fp: 328edb38ef
+    files: [catalog/software.json, src/core.js, scripts/build.js]
+    tests:
+      - "test/catalog.test.js::the catalog check finds missing fields and duplicates"
+      - "test/catalog.test.js::a new system with tasks and objects is added in the catalog file alone"
+      - "test/catalog.test.js::the catalog holds product names and typical tasks only, no client details"
+  software-landkarte.r.aufwand:
+    fp: 0250800b9a
+    files: [src/core.js, src/app.js, src/report.js]
+    tests:
+      - "test/model.test.js::aufwand: minutes per month per media break; the report sorts by effort and shows the sum"

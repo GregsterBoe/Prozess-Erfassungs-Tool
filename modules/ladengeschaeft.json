@@ -1,0 +1,37 @@
+{
+  "id": "ladengeschaeft",
+  "name": "Ladengeschäft",
+  "beschreibung": "Verkauf über die Kasse: kein Angebot, kein Mahnwesen",
+  "ausblenden": [
+    { "prozess": "o2c", "schritt": "angebot" },
+    { "prozess": "o2c", "schritt": "mahnung" }
+  ],
+  "einhaengen": [
+    { "prozess": "r2r", "nach": "kasse", "schritte": [{ "id": "tagesabschluss", "name": "Tagesabschluss der Kasse" }] }
+  ],
+  "software": [
+    {
+      "id": "ready2order",
+      "name": "ready2order",
+      "kategorie": "Kassensystem",
+      "art": "cloud",
+      "zweck": "Kasse für den Verkauf im Laden",
+      "aufgaben": [
+        { "id": "verkauf", "name": "Verkäufe kassieren", "rolle": "Verkauf", "haeufigkeit": "taeglich", "liest": ["artikel"], "schreibt": ["kasse"], "schritt": "o2c:leistung" },
+        { "id": "preise", "name": "Artikel und Preise in der Kasse pflegen", "rolle": "Verkauf", "haeufigkeit": "bedarf", "liest": [], "schreibt": ["artikel"], "schritt": "o2c:auftrag" },
+        { "id": "tagesabschluss", "name": "Tagesabschluss machen", "rolle": "Verkauf", "haeufigkeit": "taeglich", "liest": ["kasse"], "schreibt": ["kasse"], "schritt": "r2r:tagesabschluss" }
+      ]
+    },
+    {
+      "id": "orderbird",
+      "name": "orderbird",
+      "kategorie": "Kassensystem",
+      "art": "cloud",
+      "zweck": "Kasse für Gastronomie und Laden",
+      "aufgaben": [
+        { "id": "verkauf", "name": "Verkäufe kassieren", "rolle": "Verkauf", "haeufigkeit": "taeglich", "liest": ["artikel"], "schreibt": ["kasse"], "schritt": "o2c:leistung" },
+        { "id": "tagesabschluss", "name": "Tagesabschluss machen", "rolle": "Verkauf", "haeufigkeit": "taeglich", "liest": ["kasse"], "schreibt": ["kasse"], "schritt": "r2r:tagesabschluss" }
+      ]
+    }
+  ]
+}

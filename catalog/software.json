@@ -1,0 +1,196 @@
+{
+  "rollen": ["Inhaber", "Geschäftsführung", "Büro", "Buchhaltung", "Vertrieb", "Einkauf", "Lager", "Verkauf", "Monteure", "Personal", "Steuerkanzlei", "Alle"],
+  "datenobjekte": [
+    { "id": "kunden", "name": "Kunden", "art": "stamm" },
+    { "id": "lieferanten", "name": "Lieferanten", "art": "stamm" },
+    { "id": "artikel", "name": "Artikel und Preise", "art": "stamm" },
+    { "id": "mitarbeiter", "name": "Mitarbeiter", "art": "stamm" },
+    { "id": "angebote", "name": "Angebote", "art": "bewegung" },
+    { "id": "auftraege", "name": "Aufträge", "art": "bewegung" },
+    { "id": "ausgangsrechnungen", "name": "Ausgangsrechnungen", "art": "bewegung" },
+    { "id": "eingangsrechnungen", "name": "Eingangsrechnungen", "art": "bewegung" },
+    { "id": "zahlungen", "name": "Zahlungen", "art": "bewegung" },
+    { "id": "bankumsaetze", "name": "Bankumsätze", "art": "bewegung" },
+    { "id": "arbeitszeiten", "name": "Arbeitszeiten", "art": "bewegung" },
+    { "id": "kasse", "name": "Kasse", "art": "bewegung" }
+  ],
+  "software": [
+    {
+      "id": "datev-duo",
+      "name": "DATEV Unternehmen online",
+      "kategorie": "Buchhaltung",
+      "art": "cloud",
+      "zweck": "Belege an die Kanzlei übermitteln, Bankumsätze und Zahlungen",
+      "aufgaben": [
+        { "id": "belege", "name": "Eingangsrechnungen hochladen", "rolle": "Büro", "haeufigkeit": "woechentlich", "liest": [], "schreibt": ["eingangsrechnungen"], "schritt": "r2r:belege" },
+        { "id": "ar-belege", "name": "Ausgangsrechnungen hochladen", "rolle": "Büro", "haeufigkeit": "monatlich", "liest": [], "schreibt": ["ausgangsrechnungen"], "schritt": "o2c:buchen" },
+        { "id": "freigabe", "name": "Eingangsrechnungen freigeben", "rolle": "Inhaber", "haeufigkeit": "woechentlich", "liest": ["eingangsrechnungen"], "schreibt": [], "schritt": "p2p:eingangsrechnung" },
+        { "id": "zahlen", "name": "Zahlungen aus Belegen erzeugen", "rolle": "Buchhaltung", "haeufigkeit": "woechentlich", "liest": ["eingangsrechnungen", "lieferanten"], "schreibt": ["zahlungen"], "schritt": "p2p:zahlung" },
+        { "id": "kassenbuch", "name": "Kassenbuch führen", "rolle": "Büro", "haeufigkeit": "taeglich", "liest": [], "schreibt": ["kasse"], "schritt": "r2r:kasse" }
+      ]
+    },
+    {
+      "id": "datev-lohn",
+      "name": "DATEV Lohn und Gehalt",
+      "kategorie": "Lohn",
+      "art": "lokal",
+      "zweck": "Lohnabrechnung, meist durch die Steuerkanzlei",
+      "aufgaben": [
+        { "id": "stamm", "name": "Mitarbeiterstammdaten pflegen", "rolle": "Steuerkanzlei", "haeufigkeit": "bedarf", "liest": [], "schreibt": ["mitarbeiter"], "schritt": "h2r:stammdaten" },
+        { "id": "lohn", "name": "Lohn abrechnen", "rolle": "Steuerkanzlei", "haeufigkeit": "monatlich", "liest": ["mitarbeiter", "arbeitszeiten"], "schreibt": ["zahlungen"], "schritt": "h2r:lohn" }
+      ]
+    },
+    {
+      "id": "lexware-office",
+      "name": "Lexware Office",
+      "kategorie": "Buchhaltung",
+      "art": "cloud",
+      "zweck": "Rechnungen schreiben, Belege erfassen und Bank abgleichen",
+      "aufgaben": [
+        { "id": "angebot", "name": "Angebote schreiben", "rolle": "Büro", "haeufigkeit": "woechentlich", "liest": ["kunden", "artikel"], "schreibt": ["angebote"], "schritt": "o2c:angebot" },
+        { "id": "rechnung", "name": "Ausgangsrechnungen schreiben", "rolle": "Büro", "haeufigkeit": "woechentlich", "liest": ["kunden", "artikel"], "schreibt": ["ausgangsrechnungen"], "schritt": "o2c:rechnung" },
+        { "id": "belege", "name": "Belege erfassen", "rolle": "Buchhaltung", "haeufigkeit": "woechentlich", "liest": [], "schreibt": ["eingangsrechnungen"], "schritt": "r2r:belege" },
+        { "id": "bank", "name": "Bankumsätze zuordnen", "rolle": "Buchhaltung", "haeufigkeit": "woechentlich", "liest": ["bankumsaetze"], "schreibt": ["zahlungen"], "schritt": "r2r:bank" }
+      ]
+    },
+    {
+      "id": "sevdesk",
+      "name": "sevDesk",
+      "kategorie": "Buchhaltung",
+      "art": "cloud",
+      "zweck": "Rechnungen, Belege und Bankabgleich für kleine Betriebe",
+      "aufgaben": [
+        { "id": "rechnung", "name": "Ausgangsrechnungen schreiben", "rolle": "Büro", "haeufigkeit": "woechentlich", "liest": ["kunden"], "schreibt": ["ausgangsrechnungen"], "schritt": "o2c:rechnung" },
+        { "id": "belege", "name": "Belege erfassen", "rolle": "Buchhaltung", "haeufigkeit": "woechentlich", "liest": [], "schreibt": ["eingangsrechnungen"], "schritt": "r2r:belege" },
+        { "id": "mahnung", "name": "Mahnungen schreiben", "rolle": "Buchhaltung", "haeufigkeit": "monatlich", "liest": ["ausgangsrechnungen", "zahlungen"], "schreibt": [], "schritt": "o2c:mahnung" }
+      ]
+    },
+    {
+      "id": "sage-100",
+      "name": "Sage 100",
+      "kategorie": "Warenwirtschaft",
+      "art": "lokal",
+      "zweck": "Warenwirtschaft und Rechnungswesen für den Mittelstand",
+      "aufgaben": [
+        { "id": "kunden", "name": "Kunden und Lieferanten pflegen", "rolle": "Büro", "haeufigkeit": "bedarf", "liest": [], "schreibt": ["kunden", "lieferanten"], "schritt": "o2c:auftrag" },
+        { "id": "artikel", "name": "Artikel und Preise pflegen", "rolle": "Einkauf", "haeufigkeit": "woechentlich", "liest": [], "schreibt": ["artikel"], "schritt": "p2p:bedarf" },
+        { "id": "bestellen", "name": "Bestellungen schreiben", "rolle": "Einkauf", "haeufigkeit": "woechentlich", "liest": ["lieferanten", "artikel"], "schreibt": [], "schritt": "p2p:bestellen" },
+        { "id": "auftrag", "name": "Aufträge erfassen", "rolle": "Vertrieb", "haeufigkeit": "taeglich", "liest": ["kunden", "artikel"], "schreibt": ["auftraege"], "schritt": "o2c:auftrag" },
+        { "id": "rechnung", "name": "Ausgangsrechnungen schreiben", "rolle": "Vertrieb", "haeufigkeit": "taeglich", "liest": ["auftraege"], "schreibt": ["ausgangsrechnungen"], "schritt": "o2c:rechnung" }
+      ]
+    },
+    {
+      "id": "weclapp",
+      "name": "weclapp",
+      "kategorie": "Gesamtsoftware (ERP)",
+      "art": "cloud",
+      "zweck": "Cloud-ERP: Vertrieb, Einkauf, Lager, Projekte und Rechnungen in einem",
+      "aufgaben": [
+        { "id": "kunden", "name": "Kunden pflegen", "rolle": "Vertrieb", "haeufigkeit": "bedarf", "liest": [], "schreibt": ["kunden"], "schritt": "o2c:auftrag" },
+        { "id": "angebot", "name": "Angebote schreiben", "rolle": "Vertrieb", "haeufigkeit": "woechentlich", "liest": ["kunden", "artikel"], "schreibt": ["angebote"], "schritt": "o2c:angebot" },
+        { "id": "auftrag", "name": "Aufträge erfassen", "rolle": "Vertrieb", "haeufigkeit": "taeglich", "liest": ["angebote"], "schreibt": ["auftraege"], "schritt": "o2c:auftrag" },
+        { "id": "rechnung", "name": "Ausgangsrechnungen schreiben", "rolle": "Vertrieb", "haeufigkeit": "taeglich", "liest": ["auftraege"], "schreibt": ["ausgangsrechnungen"], "schritt": "o2c:rechnung" },
+        { "id": "datev-export", "name": "Buchungsstapel an DATEV exportieren", "rolle": "Buchhaltung", "haeufigkeit": "monatlich", "liest": ["ausgangsrechnungen", "eingangsrechnungen"], "schreibt": [], "schritt": "o2c:buchen" }
+      ]
+    },
+    {
+      "id": "xentral",
+      "name": "Xentral",
+      "kategorie": "Gesamtsoftware (ERP)",
+      "art": "cloud",
+      "zweck": "Cloud-ERP für Handel und Versand",
+      "aufgaben": [
+        { "id": "artikel", "name": "Artikel und Preise pflegen", "rolle": "Einkauf", "haeufigkeit": "woechentlich", "liest": [], "schreibt": ["artikel"], "schritt": "p2p:bedarf" },
+        { "id": "auftrag", "name": "Aufträge erfassen", "rolle": "Vertrieb", "haeufigkeit": "taeglich", "liest": ["kunden", "artikel"], "schreibt": ["auftraege"], "schritt": "o2c:auftrag" },
+        { "id": "rechnung", "name": "Ausgangsrechnungen erzeugen", "rolle": "Vertrieb", "haeufigkeit": "taeglich", "liest": ["auftraege"], "schreibt": ["ausgangsrechnungen"], "schritt": "o2c:rechnung" }
+      ]
+    },
+    {
+      "id": "online-banking",
+      "name": "Online-Banking der Hausbank",
+      "kategorie": "Banking",
+      "art": "cloud",
+      "zweck": "Kontostand, Überweisungen und Kontoauszüge",
+      "aufgaben": [
+        { "id": "ueberweisen", "name": "Lieferanten überweisen", "rolle": "Inhaber", "haeufigkeit": "woechentlich", "liest": ["eingangsrechnungen"], "schreibt": ["zahlungen"], "schritt": "p2p:zahlung" },
+        { "id": "eingaenge", "name": "Zahlungseingänge prüfen", "rolle": "Buchhaltung", "haeufigkeit": "woechentlich", "liest": ["bankumsaetze", "ausgangsrechnungen"], "schreibt": [], "schritt": "o2c:zahlungseingang" },
+        { "id": "loehne", "name": "Löhne überweisen", "rolle": "Inhaber", "haeufigkeit": "monatlich", "liest": ["mitarbeiter"], "schreibt": ["zahlungen"], "schritt": "h2r:auszahlung" }
+      ]
+    },
+    {
+      "id": "starmoney",
+      "name": "StarMoney Business",
+      "kategorie": "Banking",
+      "art": "lokal",
+      "zweck": "Banking-Software für mehrere Konten",
+      "aufgaben": [
+        { "id": "ueberweisen", "name": "Zahlungen ausführen", "rolle": "Buchhaltung", "haeufigkeit": "woechentlich", "liest": ["eingangsrechnungen"], "schreibt": ["zahlungen"], "schritt": "p2p:zahlung" },
+        { "id": "umsaetze", "name": "Kontoumsätze abrufen", "rolle": "Buchhaltung", "haeufigkeit": "taeglich", "liest": [], "schreibt": ["bankumsaetze"], "schritt": "r2r:bank" }
+      ]
+    },
+    {
+      "id": "clockodo",
+      "name": "Clockodo",
+      "kategorie": "Zeiterfassung",
+      "art": "cloud",
+      "zweck": "Arbeitszeiten und Abwesenheiten erfassen",
+      "aufgaben": [
+        { "id": "zeiten", "name": "Arbeitszeiten erfassen", "rolle": "Alle", "haeufigkeit": "taeglich", "liest": ["mitarbeiter"], "schreibt": ["arbeitszeiten"], "schritt": "h2r:zeiten" },
+        { "id": "urlaub", "name": "Urlaub beantragen und genehmigen", "rolle": "Inhaber", "haeufigkeit": "bedarf", "liest": ["mitarbeiter"], "schreibt": ["arbeitszeiten"], "schritt": "h2r:abwesenheit" },
+        { "id": "export", "name": "Stunden für den Lohn exportieren", "rolle": "Büro", "haeufigkeit": "monatlich", "liest": ["arbeitszeiten"], "schreibt": [], "schritt": "h2r:lohn" }
+      ]
+    },
+    {
+      "id": "personio",
+      "name": "Personio",
+      "kategorie": "Personal",
+      "art": "cloud",
+      "zweck": "Personalakte, Abwesenheiten und Vorbereitung der Lohnabrechnung",
+      "aufgaben": [
+        { "id": "stamm", "name": "Mitarbeiterdaten pflegen", "rolle": "Personal", "haeufigkeit": "bedarf", "liest": [], "schreibt": ["mitarbeiter"], "schritt": "h2r:stammdaten" },
+        { "id": "urlaub", "name": "Abwesenheiten verwalten", "rolle": "Personal", "haeufigkeit": "woechentlich", "liest": ["mitarbeiter"], "schreibt": ["arbeitszeiten"], "schritt": "h2r:abwesenheit" }
+      ]
+    },
+    {
+      "id": "excel-liste",
+      "name": "Excel-Liste",
+      "kategorie": "Excel-Liste",
+      "art": "excel",
+      "zweck": "Eine selbst geführte Liste, z. B. Preise, offene Posten oder Stunden",
+      "aufgaben": [
+        { "id": "pflegen", "name": "Liste pflegen", "rolle": "Büro", "haeufigkeit": "woechentlich", "liest": [], "schreibt": [] }
+      ]
+    },
+    {
+      "id": "papierablage",
+      "name": "Papierablage",
+      "kategorie": "Papier",
+      "art": "papier",
+      "zweck": "Ordner mit Belegen, Lieferscheinen oder Notizen",
+      "aufgaben": [
+        { "id": "ablegen", "name": "Belege abheften", "rolle": "Büro", "haeufigkeit": "woechentlich", "liest": [], "schreibt": ["eingangsrechnungen"], "schritt": "r2r:belege" }
+      ]
+    },
+    {
+      "id": "postfach",
+      "name": "Gemeinsames E-Mail-Postfach",
+      "kategorie": "Postfach",
+      "art": "postfach",
+      "zweck": "Rechnungen, Bestellungen und Anfragen per E-Mail",
+      "aufgaben": [
+        { "id": "rechnungen", "name": "Eingangsrechnungen per E-Mail empfangen", "rolle": "Büro", "haeufigkeit": "taeglich", "liest": [], "schreibt": ["eingangsrechnungen"], "schritt": "p2p:eingangsrechnung" },
+        { "id": "anfragen", "name": "Kundenanfragen beantworten", "rolle": "Vertrieb", "haeufigkeit": "taeglich", "liest": ["kunden"], "schreibt": [], "schritt": "o2c:angebot" }
+      ]
+    },
+    {
+      "id": "kassenbuch-papier",
+      "name": "Kassenbuch auf Papier",
+      "kategorie": "Papier",
+      "art": "papier",
+      "zweck": "Handschriftliches Kassenbuch",
+      "aufgaben": [
+        { "id": "kasse", "name": "Kassenbuch schreiben", "rolle": "Verkauf", "haeufigkeit": "taeglich", "liest": [], "schreibt": ["kasse"], "schritt": "r2r:kasse" }
+      ]
+    }
+  ]
+}

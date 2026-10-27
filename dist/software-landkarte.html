@@ -1,0 +1,1742 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; base-uri 'none'; form-action 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Software-Landkarte</title>
+<style>:root {
+  --bg: #f6f7f9; --panel: #fff; --ink: #1d232a; --muted: #57606a; --line: #d0d7de;
+  --accent: #0b5cad; --accent-ink: #fff; --ok: #1a7f37; --warn: #9a3412; --bad: #b42318; --soft: #eef3f8;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+header.top { background: var(--panel); border-bottom: 1px solid var(--line); padding: 10px 16px; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; }
+header.top h1 { font-size: 18px; margin: 0; }
+header.top .sub { color: var(--muted); }
+nav.tabs { display: flex; flex-wrap: wrap; gap: 4px; padding: 8px 16px 0; background: var(--panel); border-bottom: 1px solid var(--line); }
+nav.tabs button { border: 1px solid transparent; border-bottom: none; background: none; padding: 8px 12px; border-radius: 6px 6px 0 0; cursor: pointer; font: inherit; color: var(--muted); }
+nav.tabs button[aria-selected="true"] { background: var(--bg); border-color: var(--line); color: var(--ink); font-weight: 600; margin-bottom: -1px; }
+nav.tabs .count { font-size: 12px; color: var(--muted); margin-left: 4px; }
+main { padding: 16px; max-width: 1200px; margin: 0 auto; }
+section.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; margin: 0 0 14px; }
+section.panel h2 { font-size: 16px; margin: 0 0 8px; }
+section.panel h3 { font-size: 14px; margin: 12px 0 6px; }
+p.hint { color: var(--muted); margin: 4px 0 10px; font-size: 14px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 6px 0; }
+.grow { flex: 1 1 200px; min-width: 0; }
+input[type=text], input[type=number], select, textarea { font: inherit; padding: 5px 7px; border: 1px solid var(--line); border-radius: 5px; background: #fff; color: var(--ink); max-width: 100%; }
+input[type=number] { width: 7em; }
+textarea { width: 100%; min-height: 4em; }
+button { font: inherit; padding: 5px 11px; border: 1px solid var(--line); background: #fff; border-radius: 5px; cursor: pointer; color: var(--ink); }
+button:hover { background: var(--soft); }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+button.primary:hover { filter: brightness(1.08); }
+button.danger { color: var(--bad); }
+button.link { border: none; background: none; color: var(--accent); padding: 2px 4px; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid #7bb3f0; outline-offset: 1px; }
+.badge { display: inline-block; font-size: 12px; padding: 1px 7px; border-radius: 10px; background: var(--soft); color: var(--muted); margin-left: 6px; white-space: nowrap; }
+.badge.warn { background: #fff1e6; color: var(--warn); }
+.badge.bad { background: #fde8e8; color: var(--bad); }
+.badge.ok { background: #e6f4ea; color: var(--ok); }
+.card { border: 1px solid var(--line); border-radius: 7px; padding: 8px 10px; margin: 8px 0; background: #fff; }
+.card.flag-anders { border-left: 4px solid var(--warn); }
+.card.flag-unsicher { border-left: 4px solid #b58900; }
+.card.flag-ok { border-left: 4px solid var(--ok); }
+.checks { display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.checks label { white-space: nowrap; }
+table.grid { border-collapse: collapse; width: 100%; }
+table.grid th, table.grid td { border: 1px solid var(--line); padding: 4px 6px; text-align: left; vertical-align: top; }
+table.grid th { background: #f0f3f6; font-size: 13px; }
+table.grid td select { width: 100%; }
+.scroll { overflow-x: auto; }
+.lead { background: #e6f4ea; }
+.dup { background: #fde8e8; }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; }
+details > summary { cursor: pointer; color: var(--accent); }
+.toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: #1d232a; color: #fff; padding: 9px 16px; border-radius: 6px; max-width: 90vw; z-index: 10; }
+.seq li { margin: 4px 0; }
+.seq li .row { margin: 0; }
+
+/* Client walkthrough */
+.walk { max-width: 680px; margin: 0 auto; padding: 16px; }
+.walk h1 { font-size: 22px; margin: 8px 0 4px; }
+.walk .intro { color: var(--muted); }
+.progress { height: 10px; background: #e3e8ee; border-radius: 5px; overflow: hidden; margin: 12px 0 4px; }
+.progress > div { height: 100%; background: var(--accent); transition: width .2s; }
+.walk .bigcard { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; margin: 14px 0; min-height: 220px; }
+.walk .kicker { color: var(--muted); font-size: 14px; }
+.walk .title { font-size: 21px; font-weight: 650; margin: 4px 0 8px; }
+.walk .answers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 16px; }
+.walk .answers button { padding: 14px 6px; font-size: 16px; border-width: 2px; }
+.walk .answers button[aria-pressed="true"] { border-color: var(--accent); background: var(--soft); font-weight: 700; }
+.walk .nav { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.walk .keys { color: var(--muted); font-size: 13px; }
+@media (max-width: 520px) { .walk .answers { grid-template-columns: 1fr; } }
+
+@media print {
+  body { background: #fff; }
+  .no-print, header.top, nav.tabs, .toast { display: none !important; }
+  main { padding: 0; max-width: none; }
+  section.panel { border: none; padding: 0; }
+  @page { size: A4; margin: 15mm; }
+}
+</style>
+</head>
+<body>
+<div id="app"><noscript>Bitte JavaScript aktivieren.</noscript></div>
+<script id="sl-data" type="application/json">{"prozesse":{"prozesse":[{"id":"p2p","name":"Einkauf bis Zahlung","schritte":[{"id":"bedarf","name":"Bedarf feststellen"},{"id":"bestellen","name":"Bestellen"},{"id":"wareneingang","name":"Ware oder Leistung annehmen"},{"id":"eingangsrechnung","name":"Eingangsrechnung prüfen und freigeben"},{"id":"zahlung","name":"Lieferanten bezahlen"},{"id":"buchen","name":"Eingangsrechnung buchen"}]},{"id":"o2c","name":"Auftrag bis Zahlungseingang","schritte":[{"id":"angebot","name":"Anfrage und Angebot"},{"id":"auftrag","name":"Auftrag annehmen"},{"id":"leistung","name":"Liefern oder Leistung erbringen"},{"id":"rechnung","name":"Ausgangsrechnung schreiben"},{"id":"zahlungseingang","name":"Zahlungseingang überwachen"},{"id":"mahnung","name":"Mahnen"},{"id":"buchen","name":"Ausgangsrechnung buchen"}]},{"id":"h2r","name":"Personal und Lohn","schritte":[{"id":"stammdaten","name":"Mitarbeiterdaten pflegen"},{"id":"zeiten","name":"Arbeitszeiten erfassen"},{"id":"abwesenheit","name":"Urlaub und Krankheit erfassen"},{"id":"lohn","name":"Lohn abrechnen"},{"id":"auszahlung","name":"Löhne auszahlen"}]},{"id":"r2r","name":"Buchhaltung und Abschluss","schritte":[{"id":"belege","name":"Belege sammeln und übermitteln"},{"id":"bank","name":"Bankumsätze abstimmen"},{"id":"kasse","name":"Kasse führen"},{"id":"ust","name":"Umsatzsteuer-Voranmeldung"},{"id":"abschluss","name":"Jahresabschluss vorbereiten"}]}]},"katalog":{"rollen":["Inhaber","Geschäftsführung","Büro","Buchhaltung","Vertrieb","Einkauf","Lager","Verkauf","Monteure","Personal","Steuerkanzlei","Alle"],"datenobjekte":[{"id":"kunden","name":"Kunden","art":"stamm"},{"id":"lieferanten","name":"Lieferanten","art":"stamm"},{"id":"artikel","name":"Artikel und Preise","art":"stamm"},{"id":"mitarbeiter","name":"Mitarbeiter","art":"stamm"},{"id":"angebote","name":"Angebote","art":"bewegung"},{"id":"auftraege","name":"Aufträge","art":"bewegung"},{"id":"ausgangsrechnungen","name":"Ausgangsrechnungen","art":"bewegung"},{"id":"eingangsrechnungen","name":"Eingangsrechnungen","art":"bewegung"},{"id":"zahlungen","name":"Zahlungen","art":"bewegung"},{"id":"bankumsaetze","name":"Bankumsätze","art":"bewegung"},{"id":"arbeitszeiten","name":"Arbeitszeiten","art":"bewegung"},{"id":"kasse","name":"Kasse","art":"bewegung"}],"software":[{"id":"datev-duo","name":"DATEV Unternehmen online","kategorie":"Buchhaltung","art":"cloud","zweck":"Belege an die Kanzlei übermitteln, Bankumsätze und Zahlungen","aufgaben":[{"id":"belege","name":"Eingangsrechnungen hochladen","rolle":"Büro","haeufigkeit":"woechentlich","liest":[],"schreibt":["eingangsrechnungen"],"schritt":"r2r:belege"},{"id":"ar-belege","name":"Ausgangsrechnungen hochladen","rolle":"Büro","haeufigkeit":"monatlich","liest":[],"schreibt":["ausgangsrechnungen"],"schritt":"o2c:buchen"},{"id":"freigabe","name":"Eingangsrechnungen freigeben","rolle":"Inhaber","haeufigkeit":"woechentlich","liest":["eingangsrechnungen"],"schreibt":[],"schritt":"p2p:eingangsrechnung"},{"id":"zahlen","name":"Zahlungen aus Belegen erzeugen","rolle":"Buchhaltung","haeufigkeit":"woechentlich","liest":["eingangsrechnungen","lieferanten"],"schreibt":["zahlungen"],"schritt":"p2p:zahlung"},{"id":"kassenbuch","name":"Kassenbuch führen","rolle":"Büro","haeufigkeit":"taeglich","liest":[],"schreibt":["kasse"],"schritt":"r2r:kasse"}]},{"id":"datev-lohn","name":"DATEV Lohn und Gehalt","kategorie":"Lohn","art":"lokal","zweck":"Lohnabrechnung, meist durch die Steuerkanzlei","aufgaben":[{"id":"stamm","name":"Mitarbeiterstammdaten pflegen","rolle":"Steuerkanzlei","haeufigkeit":"bedarf","liest":[],"schreibt":["mitarbeiter"],"schritt":"h2r:stammdaten"},{"id":"lohn","name":"Lohn abrechnen","rolle":"Steuerkanzlei","haeufigkeit":"monatlich","liest":["mitarbeiter","arbeitszeiten"],"schreibt":["zahlungen"],"schritt":"h2r:lohn"}]},{"id":"lexware-office","name":"Lexware Office","kategorie":"Buchhaltung","art":"cloud","zweck":"Rechnungen schreiben, Belege erfassen und Bank abgleichen","aufgaben":[{"id":"angebot","name":"Angebote schreiben","rolle":"Büro","haeufigkeit":"woechentlich","liest":["kunden","artikel"],"schreibt":["angebote"],"schritt":"o2c:angebot"},{"id":"rechnung","name":"Ausgangsrechnungen schreiben","rolle":"Büro","haeufigkeit":"woechentlich","liest":["kunden","artikel"],"schreibt":["ausgangsrechnungen"],"schritt":"o2c:rechnung"},{"id":"belege","name":"Belege erfassen","rolle":"Buchhaltung","haeufigkeit":"woechentlich","liest":[],"schreibt":["eingangsrechnungen"],"schritt":"r2r:belege"},{"id":"bank","name":"Bankumsätze zuordnen","rolle":"Buchhaltung","haeufigkeit":"woechentlich","liest":["bankumsaetze"],"schreibt":["zahlungen"],"schritt":"r2r:bank"}]},{"id":"sevdesk","name":"sevDesk","kategorie":"Buchhaltung","art":"cloud","zweck":"Rechnungen, Belege und Bankabgleich für kleine Betriebe","aufgaben":[{"id":"rechnung","name":"Ausgangsrechnungen schreiben","rolle":"Büro","haeufigkeit":"woechentlich","liest":["kunden"],"schreibt":["ausgangsrechnungen"],"schritt":"o2c:rechnung"},{"id":"belege","name":"Belege erfassen","rolle":"Buchhaltung","haeufigkeit":"woechentlich","liest":[],"schreibt":["eingangsrechnungen"],"schritt":"r2r:belege"},{"id":"mahnung","name":"Mahnungen schreiben","rolle":"Buchhaltung","haeufigkeit":"monatlich","liest":["ausgangsrechnungen","zahlungen"],"schreibt":[],"schritt":"o2c:mahnung"}]},{"id":"sage-100","name":"Sage 100","kategorie":"Warenwirtschaft","art":"lokal","zweck":"Warenwirtschaft und Rechnungswesen für den Mittelstand","aufgaben":[{"id":"kunden","name":"Kunden und Lieferanten pflegen","rolle":"Büro","haeufigkeit":"bedarf","liest":[],"schreibt":["kunden","lieferanten"],"schritt":"o2c:auftrag"},{"id":"artikel","name":"Artikel und Preise pflegen","rolle":"Einkauf","haeufigkeit":"woechentlich","liest":[],"schreibt":["artikel"],"schritt":"p2p:bedarf"},{"id":"bestellen","name":"Bestellungen schreiben","rolle":"Einkauf","haeufigkeit":"woechentlich","liest":["lieferanten","artikel"],"schreibt":[],"schritt":"p2p:bestellen"},{"id":"auftrag","name":"Aufträge erfassen","rolle":"Vertrieb","haeufigkeit":"taeglich","liest":["kunden","artikel"],"schreibt":["auftraege"],"schritt":"o2c:auftrag"},{"id":"rechnung","name":"Ausgangsrechnungen schreiben","rolle":"Vertrieb","haeufigkeit":"taeglich","liest":["auftraege"],"schreibt":["ausgangsrechnungen"],"schritt":"o2c:rechnung"}]},{"id":"weclapp","name":"weclapp","kategorie":"Gesamtsoftware (ERP)","art":"cloud","zweck":"Cloud-ERP: Vertrieb, Einkauf, Lager, Projekte und Rechnungen in einem","aufgaben":[{"id":"kunden","name":"Kunden pflegen","rolle":"Vertrieb","haeufigkeit":"bedarf","liest":[],"schreibt":["kunden"],"schritt":"o2c:auftrag"},{"id":"angebot","name":"Angebote schreiben","rolle":"Vertrieb","haeufigkeit":"woechentlich","liest":["kunden","artikel"],"schreibt":["angebote"],"schritt":"o2c:angebot"},{"id":"auftrag","name":"Aufträge erfassen","rolle":"Vertrieb","haeufigkeit":"taeglich","liest":["angebote"],"schreibt":["auftraege"],"schritt":"o2c:auftrag"},{"id":"rechnung","name":"Ausgangsrechnungen schreiben","rolle":"Vertrieb","haeufigkeit":"taeglich","liest":["auftraege"],"schreibt":["ausgangsrechnungen"],"schritt":"o2c:rechnung"},{"id":"datev-export","name":"Buchungsstapel an DATEV exportieren","rolle":"Buchhaltung","haeufigkeit":"monatlich","liest":["ausgangsrechnungen","eingangsrechnungen"],"schreibt":[],"schritt":"o2c:buchen"}]},{"id":"xentral","name":"Xentral","kategorie":"Gesamtsoftware (ERP)","art":"cloud","zweck":"Cloud-ERP für Handel und Versand","aufgaben":[{"id":"artikel","name":"Artikel und Preise pflegen","rolle":"Einkauf","haeufigkeit":"woechentlich","liest":[],"schreibt":["artikel"],"schritt":"p2p:bedarf"},{"id":"auftrag","name":"Aufträge erfassen","rolle":"Vertrieb","haeufigkeit":"taeglich","liest":["kunden","artikel"],"schreibt":["auftraege"],"schritt":"o2c:auftrag"},{"id":"rechnung","name":"Ausgangsrechnungen erzeugen","rolle":"Vertrieb","haeufigkeit":"taeglich","liest":["auftraege"],"schreibt":["ausgangsrechnungen"],"schritt":"o2c:rechnung"}]},{"id":"online-banking","name":"Online-Banking der Hausbank","kategorie":"Banking","art":"cloud","zweck":"Kontostand, Überweisungen und Kontoauszüge","aufgaben":[{"id":"ueberweisen","name":"Lieferanten überweisen","rolle":"Inhaber","haeufigkeit":"woechentlich","liest":["eingangsrechnungen"],"schreibt":["zahlungen"],"schritt":"p2p:zahlung"},{"id":"eingaenge","name":"Zahlungseingänge prüfen","rolle":"Buchhaltung","haeufigkeit":"woechentlich","liest":["bankumsaetze","ausgangsrechnungen"],"schreibt":[],"schritt":"o2c:zahlungseingang"},{"id":"loehne","name":"Löhne überweisen","rolle":"Inhaber","haeufigkeit":"monatlich","liest":["mitarbeiter"],"schreibt":["zahlungen"],"schritt":"h2r:auszahlung"}]},{"id":"starmoney","name":"StarMoney Business","kategorie":"Banking","art":"lokal","zweck":"Banking-Software für mehrere Konten","aufgaben":[{"id":"ueberweisen","name":"Zahlungen ausführen","rolle":"Buchhaltung","haeufigkeit":"woechentlich","liest":["eingangsrechnungen"],"schreibt":["zahlungen"],"schritt":"p2p:zahlung"},{"id":"umsaetze","name":"Kontoumsätze abrufen","rolle":"Buchhaltung","haeufigkeit":"taeglich","liest":[],"schreibt":["bankumsaetze"],"schritt":"r2r:bank"}]},{"id":"clockodo","name":"Clockodo","kategorie":"Zeiterfassung","art":"cloud","zweck":"Arbeitszeiten und Abwesenheiten erfassen","aufgaben":[{"id":"zeiten","name":"Arbeitszeiten erfassen","rolle":"Alle","haeufigkeit":"taeglich","liest":["mitarbeiter"],"schreibt":["arbeitszeiten"],"schritt":"h2r:zeiten"},{"id":"urlaub","name":"Urlaub beantragen und genehmigen","rolle":"Inhaber","haeufigkeit":"bedarf","liest":["mitarbeiter"],"schreibt":["arbeitszeiten"],"schritt":"h2r:abwesenheit"},{"id":"export","name":"Stunden für den Lohn exportieren","rolle":"Büro","haeufigkeit":"monatlich","liest":["arbeitszeiten"],"schreibt":[],"schritt":"h2r:lohn"}]},{"id":"personio","name":"Personio","kategorie":"Personal","art":"cloud","zweck":"Personalakte, Abwesenheiten und Vorbereitung der Lohnabrechnung","aufgaben":[{"id":"stamm","name":"Mitarbeiterdaten pflegen","rolle":"Personal","haeufigkeit":"bedarf","liest":[],"schreibt":["mitarbeiter"],"schritt":"h2r:stammdaten"},{"id":"urlaub","name":"Abwesenheiten verwalten","rolle":"Personal","haeufigkeit":"woechentlich","liest":["mitarbeiter"],"schreibt":["arbeitszeiten"],"schritt":"h2r:abwesenheit"}]},{"id":"excel-liste","name":"Excel-Liste","kategorie":"Excel-Liste","art":"excel","zweck":"Eine selbst geführte Liste, z. B. Preise, offene Posten oder Stunden","aufgaben":[{"id":"pflegen","name":"Liste pflegen","rolle":"Büro","haeufigkeit":"woechentlich","liest":[],"schreibt":[]}]},{"id":"papierablage","name":"Papierablage","kategorie":"Papier","art":"papier","zweck":"Ordner mit Belegen, Lieferscheinen oder Notizen","aufgaben":[{"id":"ablegen","name":"Belege abheften","rolle":"Büro","haeufigkeit":"woechentlich","liest":[],"schreibt":["eingangsrechnungen"],"schritt":"r2r:belege"}]},{"id":"postfach","name":"Gemeinsames E-Mail-Postfach","kategorie":"Postfach","art":"postfach","zweck":"Rechnungen, Bestellungen und Anfragen per E-Mail","aufgaben":[{"id":"rechnungen","name":"Eingangsrechnungen per E-Mail empfangen","rolle":"Büro","haeufigkeit":"taeglich","liest":[],"schreibt":["eingangsrechnungen"],"schritt":"p2p:eingangsrechnung"},{"id":"anfragen","name":"Kundenanfragen beantworten","rolle":"Vertrieb","haeufigkeit":"taeglich","liest":["kunden"],"schreibt":[],"schritt":"o2c:angebot"}]},{"id":"kassenbuch-papier","name":"Kassenbuch auf Papier","kategorie":"Papier","art":"papier","zweck":"Handschriftliches Kassenbuch","aufgaben":[{"id":"kasse","name":"Kassenbuch schreiben","rolle":"Verkauf","haeufigkeit":"taeglich","liest":[],"schreibt":["kasse"],"schritt":"r2r:kasse"}]}]},"module":[{"id":"handel","name":"Handel","beschreibung":"Lager, Kommissionierung und Inventur","prozesse":[{"id":"lager","name":"Lager und Inventur","schritte":[{"id":"einlagern","name":"Ware einlagern"},{"id":"bestand","name":"Bestand führen und nachbestellen"},{"id":"inventur","name":"Inventur zählen"},{"id":"bewerten","name":"Inventur bewerten"}]}],"einhaengen":[{"prozess":"o2c","nach":"auftrag","schritte":[{"id":"kommissionieren","name":"Kommissionieren und versenden"}]},{"prozess":"p2p","nach":"wareneingang","schritte":[{"id":"wareneingang-buchen","name":"Wareneingang im Bestand buchen"}]}],"datenobjekte":[{"id":"lagerbestand","name":"Lagerbestand","art":"bewegung"},{"id":"inventurlisten","name":"Inventurlisten","art":"bewegung"}],"software":[{"id":"jtl-wawi","name":"JTL-Wawi","kategorie":"Warenwirtschaft","art":"lokal","zweck":"Artikel, Lager, Aufträge und Versand im Handel","aufgaben":[{"id":"artikel","name":"Artikel und Preise pflegen","rolle":"Einkauf","haeufigkeit":"woechentlich","liest":["lieferanten"],"schreibt":["artikel"],"schritt":"lager:bestand"},{"id":"bestellen","name":"Ware beim Lieferanten bestellen","rolle":"Einkauf","haeufigkeit":"woechentlich","liest":["lieferanten","lagerbestand"],"schreibt":[],"schritt":"p2p:bestellen"},{"id":"wareneingang","name":"Wareneingang buchen","rolle":"Lager","haeufigkeit":"taeglich","liest":["artikel"],"schreibt":["lagerbestand"],"schritt":"p2p:wareneingang-buchen"},{"id":"auftrag","name":"Aufträge erfassen","rolle":"Vertrieb","haeufigkeit":"taeglich","liest":["kunden","artikel"],"schreibt":["auftraege"],"schritt":"o2c:auftrag"},{"id":"versand","name":"Kommissionieren und versenden","rolle":"Lager","haeufigkeit":"taeglich","liest":["auftraege"],"schreibt":["lagerbestand"],"schritt":"o2c:kommissionieren"},{"id":"rechnung","name":"Ausgangsrechnungen erzeugen","rolle":"Vertrieb","haeufigkeit":"taeglich","liest":["auftraege","kunden"],"schreibt":["ausgangsrechnungen"],"schritt":"o2c:rechnung"},{"id":"inventur","name":"Inventur erfassen","rolle":"Lager","haeufigkeit":"jaehrlich","liest":["lagerbestand"],"schreibt":["inventurlisten"],"schritt":"lager:inventur"}]},{"id":"excel-inventur","name":"Inventurliste (Excel)","kategorie":"Excel-Liste","art":"excel","zweck":"Zählliste und Bewertung der Inventur","aufgaben":[{"id":"zaehlen","name":"Inventur zählen und eintragen","rolle":"Lager","haeufigkeit":"jaehrlich","liest":["artikel"],"schreibt":["inventurlisten"],"schritt":"lager:inventur"},{"id":"bewerten","name":"Inventur bewerten","rolle":"Buchhaltung","haeufigkeit":"jaehrlich","liest":["inventurlisten","artikel"],"schreibt":["inventurlisten"],"schritt":"lager:bewerten"}]}]},{"id":"handwerk","name":"Handwerk","beschreibung":"Termin- und Einsatzplanung, Material und Aufmaß","prozesse":[{"id":"einsatz","name":"Termin- und Einsatzplanung","schritte":[{"id":"termin","name":"Termin vereinbaren"},{"id":"planen","name":"Monteure einplanen"},{"id":"durchfuehren","name":"Einsatz durchführen"},{"id":"rapport","name":"Arbeitsbericht erfassen"}]}],"einhaengen":[{"prozess":"o2c","nach":"auftrag","schritte":[{"id":"material","name":"Material entnehmen"}]},{"prozess":"o2c","nach":"leistung","schritte":[{"id":"aufmass","name":"Aufmaß und Abnahme"}]}],"datenobjekte":[{"id":"einsatzplan","name":"Einsatzplan","art":"bewegung"},{"id":"arbeitsberichte","name":"Arbeitsberichte","art":"bewegung"}],"software":[{"id":"topkontor-handwerk","name":"TopKontor Handwerk","kategorie":"Handwerkersoftware","art":"lokal","zweck":"Angebote, Aufträge, Material und Rechnungen eines Handwerksbetriebs","aufgaben":[{"id":"angebot","name":"Angebote schreiben","rolle":"Büro","haeufigkeit":"woechentlich","liest":["kunden","artikel"],"schreibt":["angebote"],"schritt":"o2c:angebot"},{"id":"auftrag","name":"Aufträge anlegen","rolle":"Büro","haeufigkeit":"woechentlich","liest":["kunden","angebote"],"schreibt":["auftraege"],"schritt":"o2c:auftrag"},{"id":"material","name":"Material zum Auftrag buchen","rolle":"Lager","haeufigkeit":"taeglich","liest":["auftraege","artikel"],"schreibt":["auftraege"],"schritt":"o2c:material"},{"id":"rechnung","name":"Ausgangsrechnungen schreiben","rolle":"Büro","haeufigkeit":"woechentlich","liest":["auftraege","kunden","arbeitsberichte"],"schreibt":["ausgangsrechnungen"],"schritt":"o2c:rechnung"},{"id":"kunden","name":"Kunden anlegen und pflegen","rolle":"Büro","haeufigkeit":"bedarf","liest":[],"schreibt":["kunden"],"schritt":"o2c:auftrag"},{"id":"export","name":"Rechnungen an die Buchhaltung exportieren","rolle":"Büro","haeufigkeit":"monatlich","liest":["ausgangsrechnungen"],"schreibt":[],"schritt":"o2c:buchen"}]},{"id":"hero","name":"HERO Software","kategorie":"Handwerkersoftware","art":"cloud","zweck":"Projekte, Termine, Dokumentation und Rechnungen für Handwerker","aufgaben":[{"id":"termin","name":"Termine mit Kunden vereinbaren","rolle":"Büro","haeufigkeit":"taeglich","liest":["kunden"],"schreibt":["einsatzplan"],"schritt":"einsatz:termin"},{"id":"planen","name":"Monteure einplanen","rolle":"Büro","haeufigkeit":"taeglich","liest":["mitarbeiter","auftraege"],"schreibt":["einsatzplan"],"schritt":"einsatz:planen"},{"id":"doku","name":"Baustelle dokumentieren","rolle":"Monteure","haeufigkeit":"taeglich","liest":["einsatzplan"],"schreibt":["arbeitsberichte"],"schritt":"einsatz:rapport"},{"id":"rechnung","name":"Ausgangsrechnungen schreiben","rolle":"Büro","haeufigkeit":"woechentlich","liest":["auftraege","arbeitsberichte"],"schreibt":["ausgangsrechnungen"],"schritt":"o2c:rechnung"}]},{"id":"craftnote","name":"Craftnote","kategorie":"Baustellen-App","art":"cloud","zweck":"Baustellenkommunikation, Fotos und Arbeitszeiten der Monteure","aufgaben":[{"id":"doku","name":"Fotos und Notizen zur Baustelle erfassen","rolle":"Monteure","haeufigkeit":"taeglich","liest":["einsatzplan"],"schreibt":["arbeitsberichte"],"schritt":"einsatz:rapport"},{"id":"zeiten","name":"Arbeitszeiten auf der Baustelle erfassen","rolle":"Monteure","haeufigkeit":"taeglich","liest":[],"schreibt":["arbeitszeiten"],"schritt":"h2r:zeiten"}]},{"id":"papier-arbeitsberichte","name":"Arbeitsberichte auf Papier","kategorie":"Papier","art":"papier","zweck":"Handschriftliche Stunden- und Materialzettel der Monteure","aufgaben":[{"id":"rapport","name":"Stunden und Material auf dem Zettel notieren","rolle":"Monteure","haeufigkeit":"taeglich","liest":["einsatzplan"],"schreibt":["arbeitsberichte","arbeitszeiten"],"schritt":"einsatz:rapport"}]}]},{"id":"ladengeschaeft","name":"Ladengeschäft","beschreibung":"Verkauf über die Kasse: kein Angebot, kein Mahnwesen","ausblenden":[{"prozess":"o2c","schritt":"angebot"},{"prozess":"o2c","schritt":"mahnung"}],"einhaengen":[{"prozess":"r2r","nach":"kasse","schritte":[{"id":"tagesabschluss","name":"Tagesabschluss der Kasse"}]}],"software":[{"id":"ready2order","name":"ready2order","kategorie":"Kassensystem","art":"cloud","zweck":"Kasse für den Verkauf im Laden","aufgaben":[{"id":"verkauf","name":"Verkäufe kassieren","rolle":"Verkauf","haeufigkeit":"taeglich","liest":["artikel"],"schreibt":["kasse"],"schritt":"o2c:leistung"},{"id":"preise","name":"Artikel und Preise in der Kasse pflegen","rolle":"Verkauf","haeufigkeit":"bedarf","liest":[],"schreibt":["artikel"],"schritt":"o2c:auftrag"},{"id":"tagesabschluss","name":"Tagesabschluss machen","rolle":"Verkauf","haeufigkeit":"taeglich","liest":["kasse"],"schreibt":["kasse"],"schritt":"r2r:tagesabschluss"}]},{"id":"orderbird","name":"orderbird","kategorie":"Kassensystem","art":"cloud","zweck":"Kasse für Gastronomie und Laden","aufgaben":[{"id":"verkauf","name":"Verkäufe kassieren","rolle":"Verkauf","haeufigkeit":"taeglich","liest":["artikel"],"schreibt":["kasse"],"schritt":"o2c:leistung"},{"id":"tagesabschluss","name":"Tagesabschluss machen","rolle":"Verkauf","haeufigkeit":"taeglich","liest":["kasse"],"schreibt":["kasse"],"schritt":"r2r:tagesabschluss"}]}]}],"beispiel":{"format":"software-landkarte","formatVersion":1,"meta":{"betrieb":"Beispiel Haustechnik GmbH (erfunden)","module":["handwerk","ladengeschaeft"],"erstellt":"2026-10-27","geaendert":"2026-10-27","version":1,"vorgaenger":[]},"systems":[{"id":"sys-1","name":"TopKontor Handwerk","art":"lokal","zweck":"Angebote, Aufträge, Material und Rechnungen eines Handwerksbetriebs","rollen":["Büro","Lager"],"catalogId":"topkontor-handwerk","zielsystem":false,"durchgang":null},{"id":"sys-2","name":"DATEV Unternehmen online","art":"cloud","zweck":"Belege an die Kanzlei übermitteln, Bankumsätze und Zahlungen","rollen":["Büro","Inhaber","Buchhaltung"],"catalogId":"datev-duo","zielsystem":false,"durchgang":null},{"id":"sys-3","name":"Online-Banking der Hausbank","art":"cloud","zweck":"Kontostand, Überweisungen und Kontoauszüge","rollen":["Inhaber","Buchhaltung"],"catalogId":"online-banking","zielsystem":false,"durchgang":null},{"id":"sys-4","name":"Clockodo","art":"cloud","zweck":"Arbeitszeiten und Abwesenheiten erfassen","rollen":["Alle","Inhaber","Büro"],"catalogId":"clockodo","zielsystem":false,"durchgang":null},{"id":"sys-5","name":"ready2order","art":"cloud","zweck":"Kasse für den Verkauf im Laden","rollen":["Verkauf"],"catalogId":"ready2order","zielsystem":false,"durchgang":null},{"id":"sys-6","name":"Preisliste und offene Posten (Excel)","art":"excel","zweck":"Einkaufs- und Verkaufspreise, dazu eine Liste offener Rechnungen","rollen":["Inhaber","Büro"],"catalogId":"excel-liste","zielsystem":false,"durchgang":null},{"id":"sys-7","name":"Arbeitsberichte auf Papier","art":"papier","zweck":"Handschriftliche Stunden- und Materialzettel der Monteure","rollen":["Monteure"],"catalogId":"papier-arbeitsberichte","zielsystem":false,"durchgang":null},{"id":"sys-8","name":"Gemeinsames E-Mail-Postfach","art":"postfach","zweck":"Rechnungen, Bestellungen und Anfragen per E-Mail","rollen":["Büro","Vertrieb"],"catalogId":"postfach","zielsystem":false,"durchgang":null},{"id":"sys-9","name":"weclapp","art":"cloud","zweck":"Neue Gesamtsoftware für Angebote, Aufträge, Material und Rechnungen","rollen":[],"catalogId":"weclapp","zielsystem":true,"durchgang":null}],"objects":[{"id":"kunden","name":"Kunden","art":"stamm","catalogId":"kunden","zielFuehrend":"sys-9"},{"id":"artikel","name":"Artikel und Preise","art":"stamm","catalogId":"artikel","zielFuehrend":"sys-9"},{"id":"angebote","name":"Angebote","art":"bewegung","catalogId":"angebote","zielFuehrend":"sys-9"},{"id":"auftraege","name":"Aufträge","art":"bewegung","catalogId":"auftraege","zielFuehrend":"sys-9"},{"id":"arbeitsberichte","name":"Arbeitsberichte","art":"bewegung","catalogId":"arbeitsberichte","zielFuehrend":null},{"id":"ausgangsrechnungen","name":"Ausgangsrechnungen","art":"bewegung","catalogId":"ausgangsrechnungen","zielFuehrend":"sys-9"},{"id":"eingangsrechnungen","name":"Eingangsrechnungen","art":"bewegung","catalogId":"eingangsrechnungen","zielFuehrend":null},{"id":"lieferanten","name":"Lieferanten","art":"stamm","catalogId":"lieferanten","zielFuehrend":null},{"id":"zahlungen","name":"Zahlungen","art":"bewegung","catalogId":"zahlungen","zielFuehrend":null},{"id":"bankumsaetze","name":"Bankumsätze","art":"bewegung","catalogId":"bankumsaetze","zielFuehrend":null},{"id":"mitarbeiter","name":"Mitarbeiter","art":"stamm","catalogId":"mitarbeiter","zielFuehrend":null},{"id":"arbeitszeiten","name":"Arbeitszeiten","art":"bewegung","catalogId":"arbeitszeiten","zielFuehrend":null},{"id":"kasse","name":"Kasse","art":"bewegung","catalogId":"kasse","zielFuehrend":null},{"id":"einsatzplan","name":"Einsatzplan","art":"bewegung","catalogId":"einsatzplan","zielFuehrend":null}],"matrix":{"kunden":{"sys-1":"fuehrt","sys-8":"liest"},"lieferanten":{"sys-2":"fuehrt"},"artikel":{"sys-1":"fuehrt","sys-6":"fuehrt","sys-5":"kopie"},"angebote":{"sys-1":"fuehrt"},"auftraege":{"sys-1":"fuehrt"},"ausgangsrechnungen":{"sys-1":"fuehrt","sys-2":"kopie","sys-3":"liest","sys-6":"kopie"},"eingangsrechnungen":{"sys-2":"fuehrt","sys-8":"kopie"},"zahlungen":{"sys-3":"fuehrt","sys-2":"kopie","sys-6":"liest"},"bankumsaetze":{"sys-3":"fuehrt","sys-2":"liest"},"arbeitszeiten":{"sys-4":"fuehrt","sys-7":"kopie"},"arbeitsberichte":{"sys-7":"fuehrt","sys-1":"kopie"},"mitarbeiter":{"sys-4":"liest","sys-3":"liest"},"kasse":{"sys-5":"fuehrt"}},"tasks":[{"id":"task-1","name":"Angebote schreiben","systemId":"sys-1","rolle":"Büro","haeufigkeit":"woechentlich","liest":["kunden","artikel"],"schreibt":["angebote"],"schritte":[],"prozess":"o2c","schritt":"angebot","catalogRef":"topkontor-handwerk/angebot","schrittRef":"o2c:angebot","ziel":"wandert","durchgang":null,"quelle":"kanzlei"},{"id":"task-2","name":"Aufträge anlegen","systemId":"sys-1","rolle":"Büro","haeufigkeit":"woechentlich","liest":["kunden","angebote"],"schreibt":["auftraege"],"schritte":[],"prozess":"o2c","schritt":"auftrag","catalogRef":"topkontor-handwerk/auftrag","schrittRef":"o2c:auftrag","ziel":"wandert","durchgang":null,"quelle":"kanzlei"},{"id":"task-3","name":"Material zum Auftrag buchen","systemId":"sys-1","rolle":"Lager","haeufigkeit":"taeglich","liest":["auftraege","artikel"],"schreibt":["auftraege"],"schritte":[],"prozess":"o2c","schritt":"material","catalogRef":"topkontor-handwerk/material","schrittRef":"o2c:material","ziel":"unklar","durchgang":null,"quelle":"kanzlei"},{"id":"task-4","name":"Ausgangsrechnungen schreiben","systemId":"sys-1","rolle":"Büro","haeufigkeit":"woechentlich","liest":["auftraege","kunden","arbeitsberichte"],"schreibt":["ausgangsrechnungen"],"schritte":[],"prozess":"o2c","schritt":"rechnung","catalogRef":"topkontor-handwerk/rechnung","schrittRef":"o2c:rechnung","ziel":"wandert","durchgang":null,"quelle":"kanzlei"},{"id":"task-5","name":"Kunden anlegen und pflegen","systemId":"sys-1","rolle":"Büro","haeufigkeit":"bedarf","liest":[],"schreibt":["kunden"],"schritte":[],"prozess":"o2c","schritt":"auftrag","catalogRef":"topkontor-handwerk/kunden","schrittRef":"o2c:auftrag","ziel":"wandert","durchgang":null,"quelle":"kanzlei"},{"id":"task-6","name":"Rechnungen an die Buchhaltung exportieren","systemId":"sys-1","rolle":"Büro","haeufigkeit":"monatlich","liest":["ausgangsrechnungen"],"schreibt":[],"schritte":[],"prozess":"o2c","schritt":"buchen","catalogRef":"topkontor-handwerk/export","schrittRef":"o2c:buchen","ziel":null,"durchgang":null,"quelle":"kanzlei"},{"id":"task-7","name":"Eingangsrechnungen hochladen","systemId":"sys-2","rolle":"Büro","haeufigkeit":"woechentlich","liest":[],"schreibt":["eingangsrechnungen"],"schritte":[],"prozess":"r2r","schritt":"belege","catalogRef":"datev-duo/belege","schrittRef":"r2r:belege","ziel":null,"durchgang":null,"quelle":"kanzlei"},{"id":"task-8","name":"Ausgangsrechnungen hochladen","systemId":"sys-2","rolle":"Büro","haeufigkeit":"monatlich","liest":[],"schreibt":["ausgangsrechnungen"],"schritte":[],"prozess":"o2c","schritt":"buchen","catalogRef":"datev-duo/ar-belege","schrittRef":"o2c:buchen","ziel":null,"durchgang":null,"quelle":"kanzlei"},{"id":"task-9","name":"Eingangsrechnungen freigeben","systemId":"sys-2","rolle":"Inhaber","haeufigkeit":"woechentlich","liest":["eingangsrechnungen"],"schreibt":[],"schritte":[],"prozess":"p2p","schritt":"eingangsrechnung","catalogRef":"datev-duo/freigabe","schrittRef":"p2p:eingangsrechnung","ziel":null,"durchgang":null,"quelle":"kanzlei"},{"id":"task-10","name":"Zahlungen aus Belegen erzeugen","systemId":"sys-2","rolle":"Buchhaltung","haeufigkeit":"woechentlich","liest":["eingangsrechnungen","lieferanten"],"schreibt":["zahlungen"],"schritte":[],"prozess":"p2p","schritt":"zahlung","catalogRef":"datev-duo/zahlen","schrittRef":"p2p:zahlung","ziel":null,"durchgang":null,"quelle":"kanzlei"},{"id":"task-11","name":"Lieferanten überweisen","systemId":"sys-3","rolle":"Inhaber","haeufigkeit":"woechentlich","liest":["eingangsrechnungen"],"schreibt":["zahlungen"],"schritte":[],"prozess":"p2p","schritt":"zahlung","catalogRef":"online-banking/ueberweisen","schrittRef":"p2p:zahlung","ziel":null,"durchgang":null,"quelle":"kanzlei"},{"id":"task-12","name":"Zahlungseingänge prüfen","systemId":"sys-3","rolle":"Buchhaltung","haeufigkeit":"woechentlich","liest":["bankumsaetze","ausgangsrechnungen"],"schreibt":[],"schritte":[],"prozess":"o2c","schritt":"zahlungseingang","catalogRef":"online-banking/eingaenge","schrittRef":"o2c:zahlungseingang","ziel":null,"durchgang":null,"quelle":"kanzlei"},{"id":"task-13","name":"Löhne überweisen","systemId":"sys-3","rolle":"Inhaber","haeufigkeit":"monatlich","liest":["mitarbeiter"],"schreibt":["zahlungen"],"schritte":[],"prozess":"h2r","schritt":"auszahlung","catalogRef":"online-banking/loehne","schrittRef":"h2r:auszahlung","ziel":null,"durchgang":null,"quelle":"kanzlei"},{"id":"task-14","name":"Arbeitszeiten erfassen","systemId":"sys-4","rolle":"Alle","haeufigkeit":"taeglich","liest":["mitarbeiter"],"schreibt":["arbeitszeiten"],"schritte":[],"prozess":"h2r","schritt":"zeiten","catalogRef":"clockodo/zeiten","schrittRef":"h2r:zeiten","ziel":null,"durchgang":null,"quelle":"kanzlei"},{"id":"task-15","name":"Urlaub beantragen und genehmigen","systemId":"sys-4","rolle":"Inhaber","haeufigkeit":"bedarf","liest":["mitarbeiter"],"schreibt":["arbeitszeiten"],"schritte":[],"prozess":"h2r","schritt":"abwesenheit","catalogRef":"clockodo/urlaub","schrittRef":"h2r:abwesenheit","ziel":null,"durchgang":null,"quelle":"kanzlei"},{"id":"task-16","name":"Stunden für den Lohn exportieren","systemId":"sys-4","rolle":"Büro","haeufigkeit":"monatlich","liest":["arbeitszeiten"],"schreibt":[],"schritte":[],"prozess":"h2r","schritt":"lohn","catalogRef":"clockodo/export","schrittRef":"h2r:lohn","ziel":null,"durchgang":null,"quelle":"kanzlei"},{"id":"task-17","name":"Verkäufe kassieren","systemId":"sys-5","rolle":"Verkauf","haeufigkeit":"taeglich","liest":["artikel"],"schreibt":["kasse"],"schritte":[],"prozess":"o2c","schritt":"leistung","catalogRef":"ready2order/verkauf","schrittRef":"o2c:leistung","ziel":null,"durchgang":null,"quelle":"kanzlei"},{"id":"task-18","name":"Artikel und Preise in der Kasse pflegen","systemId":"sys-5","rolle":"Verkauf","haeufigkeit":"bedarf","liest":[],"schreibt":["artikel"],"schritte":[],"prozess":"o2c","schritt":"auftrag","catalogRef":"ready2order/preise","schrittRef":"o2c:auftrag","ziel":null,"durchgang":null,"quelle":"kanzlei"},{"id":"task-19","name":"Tagesabschluss machen","systemId":"sys-5","rolle":"Verkauf","haeufigkeit":"taeglich","liest":["kasse"],"schreibt":["kasse"],"schritte":[],"prozess":"r2r","schritt":"tagesabschluss","catalogRef":"ready2order/tagesabschluss","schrittRef":"r2r:tagesabschluss","ziel":null,"durchgang":null,"quelle":"kanzlei"},{"id":"task-20","name":"Stunden und Material auf dem Zettel notieren","systemId":"sys-7","rolle":"Monteure","haeufigkeit":"taeglich","liest":["einsatzplan"],"schreibt":["arbeitsberichte","arbeitszeiten"],"schritte":[],"prozess":"einsatz","schritt":"rapport","catalogRef":"papier-arbeitsberichte/rapport","schrittRef":"einsatz:rapport","ziel":null,"durchgang":null,"quelle":"kanzlei"},{"id":"task-21","name":"Eingangsrechnungen per E-Mail empfangen","systemId":"sys-8","rolle":"Büro","haeufigkeit":"taeglich","liest":[],"schreibt":["eingangsrechnungen"],"schritte":[],"prozess":"p2p","schritt":"eingangsrechnung","catalogRef":"postfach/rechnungen","schrittRef":"p2p:eingangsrechnung","ziel":null,"durchgang":null,"quelle":"kanzlei"},{"id":"task-22","name":"Kundenanfragen beantworten","systemId":"sys-8","rolle":"Vertrieb","haeufigkeit":"taeglich","liest":["kunden"],"schreibt":[],"schritte":[],"prozess":"o2c","schritt":"angebot","catalogRef":"postfach/anfragen","schrittRef":"o2c:angebot","ziel":null,"durchgang":null,"quelle":"kanzlei"},{"id":"task-23","name":"Preise pflegen","systemId":"sys-6","rolle":"Inhaber","haeufigkeit":"monatlich","liest":[],"schreibt":["artikel"],"schritte":[],"prozess":"o2c","schritt":"angebot","catalogRef":null,"schrittRef":"o2c:angebot","ziel":"wandert","durchgang":null,"quelle":"kanzlei"},{"id":"task-24","name":"Offene Posten nachhalten","systemId":"sys-6","rolle":"Büro","haeufigkeit":"woechentlich","liest":["ausgangsrechnungen","zahlungen"],"schreibt":[],"schritte":[],"prozess":"o2c","schritt":"zahlungseingang","catalogRef":null,"schrittRef":"o2c:zahlungseingang","ziel":"entfaellt","durchgang":null,"quelle":"kanzlei"},{"id":"task-25","name":"Arbeitsberichte abtippen","systemId":"sys-1","rolle":"Büro","haeufigkeit":"taeglich","liest":["arbeitsberichte"],"schreibt":["arbeitsberichte"],"schritte":[],"prozess":"einsatz","schritt":"rapport","catalogRef":null,"schrittRef":"einsatz:rapport","ziel":"entfaellt","durchgang":null,"quelle":"kanzlei"}],"flows":[{"id":"flow-1","objectId":"artikel","from":"sys-6","to":"sys-5","art":"manuell","haeufigkeit":"woechentlich","aufwand":60},{"id":"flow-2","objectId":"arbeitsberichte","from":"sys-7","to":"sys-1","art":"manuell","haeufigkeit":"taeglich","aufwand":240},{"id":"flow-3","objectId":"arbeitszeiten","from":"sys-7","to":"sys-4","art":"manuell","haeufigkeit":"woechentlich","aufwand":90},{"id":"flow-4","objectId":"ausgangsrechnungen","from":"sys-1","to":"sys-6","art":"manuell","haeufigkeit":"woechentlich","aufwand":45},{"id":"flow-5","objectId":"ausgangsrechnungen","from":"sys-1","to":"sys-2","art":"datei","haeufigkeit":"monatlich","aufwand":null},{"id":"flow-6","objectId":"eingangsrechnungen","from":"sys-8","to":"sys-2","art":"datei","haeufigkeit":"woechentlich","aufwand":null},{"id":"flow-7","objectId":"bankumsaetze","from":"sys-3","to":"sys-2","art":"schnittstelle","haeufigkeit":"taeglich","aufwand":null}],"order":{},"durchgang":null}}</script>
+<script id="sl-embed" type="application/json">null</script>
+<script>/* Software-Landkarte: data model and rules. No DOM, so the same file runs in the
+ * browser (as window.SL) and in Node tests (module.exports).
+ * Design: knowledge base blueprint software-landkarte.blueprint; item ids are noted
+ * where a function implements one. */
+(function (root) {
+  'use strict';
+
+  const FORMAT = 'software-landkarte';
+  const FORMAT_VERSION = 1;
+  const CLIENT_FORMAT = 'software-landkarte-mandant';
+  const RESULT_FORMAT = 'software-landkarte-durchgang';
+
+  const ARTEN = { lokal: 'Software (lokal)', cloud: 'Software (Cloud)', excel: 'Excel-Liste', papier: 'Papier', postfach: 'Postfach' };
+  const HAEUFIGKEITEN = { taeglich: 'täglich', woechentlich: 'wöchentlich', monatlich: 'monatlich', jaehrlich: 'jährlich', bedarf: 'bei Bedarf' };
+  const ZELLEN = { fuehrt: 'führt', liest: 'liest', kopie: 'Kopie', '': 'nicht vorhanden' };
+  const FLUSSARTEN = { schnittstelle: 'Schnittstelle', datei: 'Datei-Export und -Import', manuell: 'manuell abgetippt', papier: 'Papier' };
+  const MEDIENBRUCH = new Set(['manuell', 'papier']);
+  const ZIELE = { wandert: 'wandert', bleibt: 'bleibt', entfaellt: 'entfällt', unklar: 'unklar' };
+  const ANTWORTEN = { ok: 'So ist es', anders: 'Anders', unsicher: 'Unsicher' };
+  const OBJEKTARTEN = { stamm: 'Stammdaten', bewegung: 'Bewegungsdaten' };
+
+  let counter = 0;
+  function uid(prefix) {
+    counter += 1;
+    return prefix + '-' + Date.now().toString(36) + counter.toString(36) + Math.random().toString(36).slice(2, 6);
+  }
+  const today = () => new Date().toISOString().slice(0, 10);
+  const clone = (x) => JSON.parse(JSON.stringify(x));
+
+  // ---------------------------------------------------------------- catalog and framework
+
+  const SLUG = /^[a-z0-9][a-z0-9-]*$/;
+  const MODULE_KEYS = ['id', 'name', 'beschreibung', 'prozesse', 'einhaengen', 'ausblenden', 'datenobjekte', 'software'];
+  const SOFTWARE_KEYS = ['id', 'name', 'kategorie', 'art', 'zweck', 'aufgaben'];
+  const TASK_KEYS = ['id', 'name', 'rolle', 'haeufigkeit', 'liest', 'schreibt', 'schritt'];
+  const OBJECT_KEYS = ['id', 'name', 'art'];
+  // Patterns that would only appear if someone put client details into a catalog.
+  const PERSONAL = [/@[a-z0-9-]+\./i, /\bDE\d{2}\s?\d{4}/, /\+?\d[\d /-]{8,}\d/];
+
+  function unknownKeys(obj, allowed, where, errors) {
+    for (const k of Object.keys(obj || {})) if (!allowed.includes(k)) errors.push(`${where}: unbekanntes Feld „${k}“`);
+  }
+
+  function checkProcesses(list, where, errors, seen) {
+    if (!Array.isArray(list)) { errors.push(`${where}: prozesse muss eine Liste sein`); return; }
+    for (const p of list) {
+      if (!p || !SLUG.test(p.id || '')) { errors.push(`${where}: Prozess ohne gültige id`); continue; }
+      if (seen.has(p.id)) errors.push(`${where}: Prozess-id „${p.id}“ doppelt`);
+      seen.add(p.id);
+      unknownKeys(p, ['id', 'name', 'schritte'], `${where}/${p.id}`, errors);
+      if (!p.name) errors.push(`${where}/${p.id}: name fehlt`);
+      if (!Array.isArray(p.schritte) || !p.schritte.length) { errors.push(`${where}/${p.id}: keine Schritte`); continue; }
+      checkSteps(p.schritte, `${where}/${p.id}`, errors, new Set());
+    }
+  }
+
+  function checkSteps(steps, where, errors, seen) {
+    for (const s of steps) {
+      if (!s || !SLUG.test(s.id || '')) { errors.push(`${where}: Schritt ohne gültige id`); continue; }
+      unknownKeys(s, ['id', 'name'], `${where}:${s.id}`, errors);
+      if (seen.has(s.id)) errors.push(`${where}: Schritt-id „${s.id}“ doppelt`);
+      seen.add(s.id);
+      if (!s.name) errors.push(`${where}:${s.id}: name fehlt`);
+    }
+  }
+
+  function validateCore(core) {
+    const errors = [];
+    if (!core || !Array.isArray(core.prozesse)) return ['Kern: prozesse fehlt'];
+    unknownKeys(core, ['prozesse'], 'Kern', errors);
+    checkProcesses(core.prozesse, 'Kern', errors, new Set());
+    return errors;
+  }
+
+  /** One module against the core. A module may add processes, insert steps after named
+   * core steps and hide core steps. It has no way to rename or delete one
+   * (software-landkarte.r.prozess-baukasten). */
+  function validateModule(mod, core) {
+    const errors = [];
+    const where = `Modul ${mod && mod.id ? mod.id : '?'}`;
+    if (!mod || typeof mod !== 'object') return [`${where}: kein Objekt`];
+    unknownKeys(mod, MODULE_KEYS, where, errors);
+    if (!SLUG.test(mod.id || '')) errors.push(`${where}: id fehlt oder ist ungültig`);
+    if (!mod.name) errors.push(`${where}: name fehlt`);
+    const coreIds = new Set(core.prozesse.map((p) => p.id));
+    checkProcesses(mod.prozesse || [], where, errors, new Set(coreIds));
+    for (const ins of mod.einhaengen || []) {
+      unknownKeys(ins, ['prozess', 'nach', 'schritte'], `${where}/einhaengen`, errors);
+      const p = core.prozesse.find((x) => x.id === ins.prozess);
+      if (!p) { errors.push(`${where}: Einhängepunkt in unbekanntem Kernprozess „${ins.prozess}“`); continue; }
+      if (!p.schritte.some((s) => s.id === ins.nach)) errors.push(`${where}: Einhängepunkt „${ins.prozess}:${ins.nach}“ gibt es nicht`);
+      if (!Array.isArray(ins.schritte) || !ins.schritte.length) { errors.push(`${where}: Einhängen ohne Schritte`); continue; }
+      checkSteps(ins.schritte, `${where}/${ins.prozess}`, errors, new Set(p.schritte.map((s) => s.id)));
+    }
+    for (const a of mod.ausblenden || []) {
+      unknownKeys(a, ['prozess', 'schritt'], `${where}/ausblenden`, errors);
+      const p = core.prozesse.find((x) => x.id === a.prozess);
+      if (!p || !p.schritte.some((s) => s.id === a.schritt)) errors.push(`${where}: auszublendender Kernschritt „${a.prozess}:${a.schritt}“ gibt es nicht`);
+    }
+    return errors;
+  }
+
+  /** All modules together: unique ids across modules, no two modules inserting the same step. */
+  function validateModules(core, modules) {
+    const errors = [];
+    const ids = new Set();
+    const procs = new Set(core.prozesse.map((p) => p.id));
+    const inserted = new Set();
+    for (const m of modules) {
+      errors.push(...validateModule(m, core));
+      if (ids.has(m.id)) errors.push(`Modul-id „${m.id}“ doppelt`);
+      ids.add(m.id);
+      for (const p of m.prozesse || []) {
+        if (procs.has(p.id)) errors.push(`Prozess-id „${p.id}“ in mehreren Modulen oder im Kern`);
+        procs.add(p.id);
+      }
+      for (const ins of m.einhaengen || []) for (const s of ins.schritte || []) {
+        const key = `${ins.prozess}:${s.id}`;
+        if (inserted.has(key)) errors.push(`Schritt „${key}“ wird von mehreren Modulen eingehängt`);
+        inserted.add(key);
+      }
+    }
+    return errors;
+  }
+
+  /** The processes the office sees for one client: the core plus the chosen modules.
+   * A core step is hidden only when every chosen module hides it, so "Handwerk mit
+   * Ladengeschäft" keeps the Angebot step the Ladengeschäft module would drop. */
+  function resolveFramework(core, modules, selected) {
+    const chosen = (selected || []).map((id) => modules.find((m) => m.id === id)).filter(Boolean);
+    const prozesse = core.prozesse.map((p) => ({
+      id: p.id, name: p.name, modul: null,
+      schritte: p.schritte.map((s) => ({ id: s.id, name: s.name, modul: null })),
+    }));
+    for (const m of chosen) {
+      for (const ins of m.einhaengen || []) {
+        const p = prozesse.find((x) => x.id === ins.prozess);
+        if (!p) continue;
+        let i = p.schritte.findIndex((s) => s.id === ins.nach && !s.modul);
+        if (i < 0) continue;
+        while (i + 1 < p.schritte.length && p.schritte[i + 1].nach === ins.nach) i += 1;
+        p.schritte.splice(i + 1, 0, ...ins.schritte.map((s) => ({ id: s.id, name: s.name, modul: m.id, nach: ins.nach })));
+      }
+      for (const p of m.prozesse || []) {
+        prozesse.push({ id: p.id, name: p.name, modul: m.id, schritte: p.schritte.map((s) => ({ id: s.id, name: s.name, modul: m.id })) });
+      }
+    }
+    if (chosen.length) {
+      const hiddenBy = (key) => chosen.every((m) => (m.ausblenden || []).some((a) => `${a.prozess}:${a.schritt}` === key));
+      for (const p of prozesse) p.schritte = p.schritte.filter((s) => s.modul || !hiddenBy(`${p.id}:${s.id}`));
+    }
+    const fw = { module: chosen.map((m) => m.id), prozesse };
+    fw.prozess = (id) => prozesse.find((p) => p.id === id) || null;
+    fw.hasStep = (pid, sid) => { const p = fw.prozess(pid); return !!p && p.schritte.some((s) => s.id === sid); };
+    return fw;
+  }
+
+  /** Catalog entries plus what the chosen modules suggest. */
+  function mergedCatalog(catalog, modules, selected) {
+    const chosen = modules.filter((m) => (selected || []).includes(m.id));
+    return {
+      rollen: catalog.rollen || [],
+      datenobjekte: [...catalog.datenobjekte, ...chosen.flatMap((m) => (m.datenobjekte || []).map((o) => ({ ...o, modul: m.id })))],
+      software: [...catalog.software, ...chosen.flatMap((m) => (m.software || []).map((s) => ({ ...s, modul: m.id })))],
+    };
+  }
+
+  /** Catalog file check: required fields, duplicates, valid references, and nothing that
+   * looks like client data (software-landkarte.r.katalog-pflege). Module suggestions are
+   * checked the same way. */
+  function validateCatalog(catalog, core, modules) {
+    const errors = [];
+    unknownKeys(catalog, ['rollen', 'datenobjekte', 'software'], 'Katalog', errors);
+    const rollen = new Set(catalog.rollen || []);
+    if (!rollen.size) errors.push('Katalog: rollen fehlt');
+    const all = { datenobjekte: [...(catalog.datenobjekte || [])], software: [] };
+    for (const m of modules) all.datenobjekte.push(...(m.datenobjekte || []));
+    const objIds = new Set();
+    const objNames = new Set();
+    for (const o of all.datenobjekte) {
+      unknownKeys(o, OBJECT_KEYS, `Datenobjekt ${o.id}`, errors);
+      if (!SLUG.test(o.id || '') || !o.name) { errors.push(`Datenobjekt ohne id oder name: ${JSON.stringify(o)}`); continue; }
+      if (!OBJEKTARTEN[o.art]) errors.push(`Datenobjekt ${o.id}: art muss stamm oder bewegung sein`);
+      if (objIds.has(o.id)) errors.push(`Datenobjekt-id „${o.id}“ doppelt`);
+      if (objNames.has(o.name.toLowerCase())) errors.push(`Datenobjekt „${o.name}“ doppelt`);
+      objIds.add(o.id); objNames.add(o.name.toLowerCase());
+    }
+    const fwAll = resolveFramework(core, modules, modules.map((m) => m.id));
+    // Steps hidden by every module are still valid references.
+    const allSteps = new Set();
+    for (const p of core.prozesse) for (const s of p.schritte) allSteps.add(`${p.id}:${s.id}`);
+    for (const p of fwAll.prozesse) for (const s of p.schritte) allSteps.add(`${p.id}:${s.id}`);
+    const swIds = new Set();
+    const swNames = new Set();
+    const lists = [['Katalog', catalog.software || []], ...modules.map((m) => [`Modul ${m.id}`, m.software || []])];
+    for (const [where, list] of lists) for (const sw of list) {
+      const w = `${where}/${sw.id}`;
+      unknownKeys(sw, SOFTWARE_KEYS, w, errors);
+      for (const k of ['id', 'name', 'kategorie', 'art', 'zweck']) if (!sw[k]) errors.push(`${w}: ${k} fehlt`);
+      if (sw.art && !ARTEN[sw.art]) errors.push(`${w}: unbekannte art „${sw.art}“`);
+      if (swIds.has(sw.id)) errors.push(`Software-id „${sw.id}“ doppelt`);
+      if (sw.name && swNames.has(sw.name.toLowerCase())) errors.push(`Software „${sw.name}“ doppelt`);
+      swIds.add(sw.id); if (sw.name) swNames.add(sw.name.toLowerCase());
+      for (const text of [sw.name, sw.zweck]) if (PERSONAL.some((re) => re.test(text || ''))) errors.push(`${w}: sieht nach Kontaktdaten aus`);
+      if (!Array.isArray(sw.aufgaben) || !sw.aufgaben.length) { errors.push(`${w}: keine Aufgaben`); continue; }
+      const tIds = new Set();
+      for (const t of sw.aufgaben) {
+        const tw = `${w}/${t.id}`;
+        unknownKeys(t, TASK_KEYS, tw, errors);
+        if (!t.id || !t.name) errors.push(`${tw}: id oder name fehlt`);
+        if (tIds.has(t.id)) errors.push(`${w}: Aufgaben-id „${t.id}“ doppelt`);
+        tIds.add(t.id);
+        if (!rollen.has(t.rolle)) errors.push(`${tw}: Rolle „${t.rolle}“ steht nicht in rollen`);
+        if (!HAEUFIGKEITEN[t.haeufigkeit]) errors.push(`${tw}: unbekannte Häufigkeit „${t.haeufigkeit}“`);
+        for (const o of [...(t.liest || []), ...(t.schreibt || [])]) if (!objIds.has(o)) errors.push(`${tw}: unbekanntes Datenobjekt „${o}“`);
+        if (t.schritt && !allSteps.has(t.schritt)) errors.push(`${tw}: unbekannter Prozessschritt „${t.schritt}“`);
+      }
+    }
+    return errors;
+  }
+
+  // ---------------------------------------------------------------- state
+
+  function emptyState() {
+    const d = today();
+    return {
+      format: FORMAT, formatVersion: FORMAT_VERSION,
+      meta: { betrieb: '', module: [], erstellt: d, geaendert: d, version: 1, vorgaenger: [] },
+      systems: [], objects: [], matrix: {}, tasks: [], flows: [], order: {},
+      durchgang: null,
+    };
+  }
+
+  function normalize(s) {
+    const base = emptyState();
+    const out = { ...base, ...s, meta: { ...base.meta, ...(s.meta || {}) } };
+    for (const k of ['systems', 'objects', 'tasks', 'flows']) out[k] = Array.isArray(out[k]) ? out[k] : [];
+    out.matrix = out.matrix || {};
+    out.order = out.order || {};
+    out.tasks.forEach((t) => { t.liest = t.liest || []; t.schreibt = t.schreibt || []; t.schritte = t.schritte || []; });
+    out.systems.forEach((x) => { x.rollen = x.rollen || []; });
+    out.format = FORMAT; out.formatVersion = FORMAT_VERSION;
+    return out;
+  }
+
+  /** Result file with a format version (software-landkarte.r.zwischenstand). */
+  function toFile(state) {
+    return JSON.stringify({ ...state, format: FORMAT, formatVersion: FORMAT_VERSION }, null, 2);
+  }
+
+  function fromFile(text) {
+    let data;
+    try { data = JSON.parse(text); } catch (e) { throw new Error('Die Datei ist kein gültiges JSON.'); }
+    if (!data || data.format !== FORMAT) throw new Error('Die Datei ist keine Software-Landkarte.');
+    if (typeof data.formatVersion !== 'number') throw new Error('Die Datei hat keine Formatversion.');
+    if (data.formatVersion > FORMAT_VERSION) throw new Error(`Die Datei hat Formatversion ${data.formatVersion}; dieses Werkzeug kennt nur bis ${FORMAT_VERSION}.`);
+    return normalize(data);
+  }
+
+  const touch = (state) => { state.meta.geaendert = today(); return state; };
+  const istSystems = (state) => state.systems.filter((s) => !s.zielsystem);
+  const sysById = (state, id) => state.systems.find((s) => s.id === id);
+  const objById = (state, id) => state.objects.find((o) => o.id === id);
+  const taskById = (state, id) => state.tasks.find((t) => t.id === id);
+
+  // Systems (software-landkarte.r.systeme)
+  function addSystem(state, { name, art = 'lokal', zweck = '', rollen = [], catalogId = null }) {
+    if (!name || !String(name).trim()) throw new Error('Ein System braucht einen Namen.');
+    if (!ARTEN[art]) throw new Error(`Unbekannte Art „${art}“.`);
+    const sys = { id: uid('sys'), name: String(name).trim(), art, zweck, rollen: [...rollen], catalogId, zielsystem: false, durchgang: null };
+    state.systems.push(sys);
+    touch(state);
+    return sys;
+  }
+
+  function updateSystem(state, id, patch) {
+    const sys = sysById(state, id);
+    if (patch.art && !ARTEN[patch.art]) throw new Error(`Unbekannte Art „${patch.art}“.`);
+    Object.assign(sys, patch);
+    return touch(state), sys;
+  }
+
+  function removeSystem(state, id) {
+    state.systems = state.systems.filter((s) => s.id !== id);
+    state.tasks = state.tasks.filter((t) => t.systemId !== id);
+    state.flows = state.flows.filter((f) => f.from !== id && f.to !== id);
+    for (const row of Object.values(state.matrix)) delete row[id];
+    for (const o of state.objects) if (o.zielFuehrend === id) o.zielFuehrend = null;
+    touch(state);
+  }
+
+  function ensureObject(state, cat, objId) {
+    let obj = objById(state, objId);
+    if (obj) return obj;
+    const entry = cat.datenobjekte.find((o) => o.id === objId);
+    if (!entry) throw new Error(`Unbekanntes Datenobjekt „${objId}“.`);
+    obj = { id: entry.id, name: entry.name, art: entry.art, catalogId: entry.id, zielFuehrend: null };
+    state.objects.push(obj);
+    return obj;
+  }
+
+  function addObject(state, { name, art = 'stamm' }) {
+    if (!name || !String(name).trim()) throw new Error('Ein Datenobjekt braucht einen Namen.');
+    const obj = { id: uid('obj'), name: String(name).trim(), art, catalogId: null, zielFuehrend: null };
+    state.objects.push(obj);
+    touch(state);
+    return obj;
+  }
+
+  function removeObject(state, id) {
+    state.objects = state.objects.filter((o) => o.id !== id);
+    delete state.matrix[id];
+    state.flows = state.flows.filter((f) => f.objectId !== id);
+    for (const t of state.tasks) { t.liest = t.liest.filter((x) => x !== id); t.schreibt = t.schreibt.filter((x) => x !== id); }
+    touch(state);
+  }
+
+  /** Adds a catalog system; its typical tasks come along unless a subset is given. */
+  function addSystemFromCatalog(state, cat, softwareId, fw, taskIds) {
+    const sw = cat.software.find((s) => s.id === softwareId);
+    if (!sw) throw new Error(`Unbekannte Software „${softwareId}“.`);
+    const rollen = [...new Set(sw.aufgaben.map((t) => t.rolle))];
+    const sys = addSystem(state, { name: sw.name, art: sw.art, zweck: sw.zweck, rollen, catalogId: sw.id });
+    for (const t of sw.aufgaben) if (!taskIds || taskIds.includes(t.id)) addCatalogTask(state, cat, sys.id, t.id, fw);
+    return sys;
+  }
+
+  function catalogTasksFor(cat, sys) {
+    const sw = sys && sys.catalogId ? cat.software.find((s) => s.id === sys.catalogId) : null;
+    return sw ? sw.aufgaben : [];
+  }
+
+  /** Where the catalog points a task to a process step, the tool proposes that
+   * assignment (software-landkarte.r.prozess-baukasten). */
+  function suggestProcess(ref, fw) {
+    if (!ref || !fw) return null;
+    const [pid, sid] = ref.split(':');
+    return fw.hasStep(pid, sid) ? { prozess: pid, schritt: sid } : null;
+  }
+
+  // Tasks (software-landkarte.r.aufgaben)
+  function addTask(state, { name, systemId, rolle = '', haeufigkeit = 'bedarf', liest = [], schreibt = [], catalogRef = null, schrittRef = null }, fw) {
+    if (!name || !String(name).trim()) throw new Error('Eine Aufgabe braucht eine Bezeichnung.');
+    if (!sysById(state, systemId)) throw new Error('Unbekanntes System.');
+    if (!HAEUFIGKEITEN[haeufigkeit]) throw new Error(`Unbekannte Häufigkeit „${haeufigkeit}“.`);
+    const sug = suggestProcess(schrittRef, fw);
+    const task = {
+      id: uid('task'), name: String(name).trim(), systemId, rolle, haeufigkeit,
+      liest: [...liest], schreibt: [...schreibt], schritte: [],
+      prozess: sug ? sug.prozess : null, schritt: sug ? sug.schritt : null,
+      catalogRef, schrittRef, ziel: null, durchgang: null, quelle: 'kanzlei',
+    };
+    state.tasks.push(task);
+    touch(state);
+    return task;
+  }
+
+  function addCatalogTask(state, cat, systemId, catTaskId, fw) {
+    const sys = sysById(state, systemId);
+    const t = catalogTasksFor(cat, sys).find((x) => x.id === catTaskId);
+    if (!t) throw new Error(`Unbekannte Katalogaufgabe „${catTaskId}“.`);
+    const ref = `${sys.catalogId}/${t.id}`;
+    const existing = state.tasks.find((x) => x.systemId === systemId && x.catalogRef === ref);
+    if (existing) return existing;
+    for (const o of [...(t.liest || []), ...(t.schreibt || [])]) ensureObject(state, cat, o);
+    return addTask(state, {
+      name: t.name, systemId, rolle: t.rolle, haeufigkeit: t.haeufigkeit,
+      liest: t.liest || [], schreibt: t.schreibt || [], catalogRef: ref, schrittRef: t.schritt || null,
+    }, fw);
+  }
+
+  /** Switches one proposed catalog task on or off. */
+  function toggleCatalogTask(state, cat, systemId, catTaskId, on, fw) {
+    const sys = sysById(state, systemId);
+    const ref = `${sys.catalogId}/${catTaskId}`;
+    if (on) return addCatalogTask(state, cat, systemId, catTaskId, fw);
+    state.tasks.filter((t) => t.systemId === systemId && t.catalogRef === ref).forEach((t) => removeTask(state, t.id));
+    return null;
+  }
+
+  function updateTask(state, id, patch) {
+    const t = taskById(state, id);
+    if (patch.haeufigkeit && !HAEUFIGKEITEN[patch.haeufigkeit]) throw new Error('Unbekannte Häufigkeit.');
+    Object.assign(t, patch);
+    return touch(state), t;
+  }
+
+  function removeTask(state, id) {
+    state.tasks = state.tasks.filter((t) => t.id !== id);
+    for (const k of Object.keys(state.order)) state.order[k] = state.order[k].filter((x) => x !== id);
+    touch(state);
+  }
+
+  /** Second level of a task, only where needed (software-landkarte.d.aufgabentiefe). */
+  function addStep(state, taskId, name) {
+    const t = taskById(state, taskId);
+    if (!name || !String(name).trim()) throw new Error('Ein Schritt braucht eine Bezeichnung.');
+    const step = { id: uid('step'), name: String(name).trim() };
+    t.schritte.push(step);
+    return touch(state), step;
+  }
+
+  function removeStep(state, taskId, stepId) {
+    const t = taskById(state, taskId);
+    t.schritte = t.schritte.filter((s) => s.id !== stepId);
+    touch(state);
+  }
+
+  // Data objects and leading system (software-landkarte.r.datenobjekte)
+  function setCell(state, objId, sysId, value) {
+    if (!(value in ZELLEN)) throw new Error(`Unbekannter Wert „${value}“.`);
+    const row = state.matrix[objId] || (state.matrix[objId] = {});
+    if (value) row[sysId] = value; else delete row[sysId];
+    touch(state);
+  }
+
+  const cell = (state, objId, sysId) => (state.matrix[objId] || {})[sysId] || '';
+
+  function leaders(state, objId) {
+    return istSystems(state).filter((s) => cell(state, objId, s.id) === 'fuehrt').map((s) => s.id);
+  }
+
+  /** ok, doppelt (more than one leading system) or luecke (none). */
+  function objectStatus(state, objId) {
+    const n = leaders(state, objId).length;
+    return n > 1 ? 'doppelt' : n === 0 ? 'luecke' : 'ok';
+  }
+
+  // Flows and media breaks (software-landkarte.r.datenfluesse)
+  function addFlow(state, { objectId, from, to, art = 'schnittstelle', haeufigkeit = 'monatlich', aufwand = null }) {
+    if (!objById(state, objectId)) throw new Error('Unbekanntes Datenobjekt.');
+    if (!sysById(state, from) || !sysById(state, to)) throw new Error('Unbekanntes System.');
+    if (from === to) throw new Error('Ein Fluss verbindet zwei verschiedene Systeme.');
+    if (!FLUSSARTEN[art]) throw new Error(`Unbekannte Art „${art}“.`);
+    const flow = { id: uid('flow'), objectId, from, to, art, haeufigkeit, aufwand };
+    state.flows.push(flow);
+    return touch(state), flow;
+  }
+
+  function updateFlow(state, id, patch) {
+    const f = state.flows.find((x) => x.id === id);
+    Object.assign(f, patch);
+    return touch(state), f;
+  }
+
+  function removeFlow(state, id) {
+    state.flows = state.flows.filter((f) => f.id !== id);
+    touch(state);
+  }
+
+  const isMedienbruch = (flow) => MEDIENBRUCH.has(flow.art);
+
+  /** A task writes an object into a system that does not lead it: the data has to come
+   * from the leading system, so propose that flow unless it is already there. */
+  function suggestFlows(state) {
+    const out = [];
+    const seen = new Set();
+    for (const t of state.tasks) {
+      const sys = sysById(state, t.systemId);
+      if (!sys || sys.zielsystem) continue;
+      for (const o of t.schreibt) {
+        if (cell(state, o, t.systemId) === 'fuehrt') continue;
+        for (const l of leaders(state, o)) {
+          const key = `${o}|${l}|${t.systemId}`;
+          if (l === t.systemId || seen.has(key)) continue;
+          if (state.flows.some((f) => f.objectId === o && f.from === l && f.to === t.systemId)) continue;
+          seen.add(key);
+          out.push({ objectId: o, from: l, to: t.systemId, taskId: t.id });
+        }
+      }
+    }
+    return out;
+  }
+
+  /** Media breaks, largest effort first, with the monthly sum (software-landkarte.r.aufwand). */
+  function medienbrueche(state) {
+    const list = state.flows.filter(isMedienbruch).slice()
+      .sort((a, b) => (Number(b.aufwand) || 0) - (Number(a.aufwand) || 0));
+    const summe = list.reduce((n, f) => n + (Number(f.aufwand) || 0), 0);
+    return { list, summe };
+  }
+
+  /** Media breaks a task runs into: manual or paper flows arriving in its system for an
+   * object it reads or writes. */
+  function taskBreaks(state, task) {
+    const objs = new Set([...task.liest, ...task.schreibt]);
+    return state.flows.filter((f) => isMedienbruch(f) && f.to === task.systemId && objs.has(f.objectId));
+  }
+
+  /** Where the second level pays off: a media break or double maintenance. */
+  function needsSteps(state, task) {
+    return taskBreaks(state, task).length > 0 || task.schreibt.some((o) => objectStatus(state, o) === 'doppelt');
+  }
+
+  // Processes (software-landkarte.r.prozesse)
+  function assignTask(state, taskId, prozess, schritt) {
+    const t = taskById(state, taskId);
+    for (const k of Object.keys(state.order)) state.order[k] = state.order[k].filter((x) => x !== taskId);
+    t.prozess = prozess || null;
+    t.schritt = prozess ? schritt || null : null;
+    touch(state);
+  }
+
+  function inFramework(task, fw) {
+    const p = fw.prozess(task.prozess);
+    return !!p && (!task.schritt || p.schritte.some((s) => s.id === task.schritt));
+  }
+
+  /** Tasks of one process in order: by step, then by the office's own order. */
+  function sequence(state, fw, procId) {
+    const p = fw.prozess(procId);
+    if (!p) return [];
+    const tasks = state.tasks.filter((t) => t.prozess === procId && inFramework(t, fw) && !(sysById(state, t.systemId) || {}).zielsystem);
+    const idx = (t) => { const i = p.schritte.findIndex((s) => s.id === t.schritt); return i < 0 ? p.schritte.length : i; };
+    const order = state.order[procId] || [];
+    const listed = order.map((id) => tasks.find((t) => t.id === id)).filter(Boolean);
+    const rest = tasks.filter((t) => !order.includes(t.id)).sort((a, b) => idx(a) - idx(b));
+    for (const r of rest) {
+      const at = listed.findIndex((l) => idx(l) > idx(r));
+      if (at < 0) listed.push(r); else listed.splice(at, 0, r);
+    }
+    return listed;
+  }
+
+  function moveInSequence(state, fw, procId, taskId, delta) {
+    const seq = sequence(state, fw, procId).map((t) => t.id);
+    const i = seq.indexOf(taskId);
+    const j = i + delta;
+    if (i < 0 || j < 0 || j >= seq.length) return;
+    [seq[i], seq[j]] = [seq[j], seq[i]];
+    state.order[procId] = seq;
+    touch(state);
+  }
+
+  /** "Sonstiges": tasks that fit no process of the chosen framework stay visible. */
+  function unassigned(state, fw) {
+    return state.tasks.filter((t) => !inFramework(t, fw) && !(sysById(state, t.systemId) || {}).zielsystem);
+  }
+
+  /** Swimlane data for one process (software-landkarte.d.darstellung): systems as lanes,
+   * steps as columns in order (tasks of the same step in different systems share one),
+   * media breaks marked. */
+  function swimlane(state, fw, procId) {
+    const seq = sequence(state, fw, procId);
+    const used = new Set(seq.map((t) => t.systemId));
+    const lanes = state.systems.filter((s) => used.has(s.id));
+    const columns = [];
+    for (const t of seq) {
+      const last = columns[columns.length - 1];
+      const item = { task: t, breaks: taskBreaks(state, t) };
+      if (last && t.schritt && last.schritt === t.schritt && !last.items.some((i) => i.task.systemId === t.systemId)) {
+        last.items.push(item);
+        continue;
+      }
+      let uebergang = null;
+      const prev = last ? last.items.map((i) => i.task.systemId).filter((id) => id !== t.systemId) : [];
+      if (prev.length && last.items.every((i) => i.task.systemId !== t.systemId)) {
+        const flows = state.flows.filter((f) => prev.includes(f.from) && f.to === t.systemId);
+        uebergang = { from: prev, to: t.systemId, flows, medienbruch: flows.some(isMedienbruch) };
+      }
+      columns.push({ schritt: t.schritt, items: [item], uebergang });
+    }
+    return { prozess: fw.prozess(procId), lanes, columns };
+  }
+
+  // Target picture (software-landkarte.r.zielbild, software-landkarte.d.zielbild)
+  const zielsysteme = (state) => state.systems.filter((s) => s.zielsystem);
+
+  function setZielsystem(state, sysId, on) {
+    const sys = sysById(state, sysId);
+    sys.zielsystem = !!on;
+    if (on) {
+      // A target system is not in use yet: it holds no current data.
+      for (const row of Object.values(state.matrix)) delete row[sysId];
+    }
+    touch(state);
+  }
+
+  function setTaskZiel(state, taskId, ziel) {
+    if (ziel && !ZIELE[ziel]) throw new Error(`Unbekannter Wert „${ziel}“.`);
+    taskById(state, taskId).ziel = ziel || null;
+    touch(state);
+  }
+
+  function setZielFuehrend(state, objId, sysId) {
+    objById(state, objId).zielFuehrend = sysId || null;
+    touch(state);
+  }
+
+  /** The changeover list: what moves, which flows need an interface, which systems can
+   * be switched off, and what is still open. */
+  function umstellungsliste(state) {
+    const ziel = zielsysteme(state);
+    const zielIds = new Set(ziel.map((s) => s.id));
+    const ist = istSystems(state);
+    const tasks = state.tasks.filter((t) => !zielIds.has(t.systemId));
+    const leadsInTarget = (sysId) => state.objects.some((o) => o.zielFuehrend === sysId);
+    const abschalten = ist.filter((s) => {
+      const own = tasks.filter((t) => t.systemId === s.id);
+      return own.length > 0 && own.every((t) => t.ziel === 'wandert' || t.ziel === 'entfaellt') && !leadsInTarget(s.id);
+    });
+    const off = new Set(abschalten.map((s) => s.id));
+    const bleiben = ist.filter((s) => !off.has(s.id));
+    // Where each task runs in the target picture.
+    const target = (t) => (t.ziel === 'entfaellt' ? null : t.ziel === 'wandert' ? (ziel[0] || {}).id || null : t.systemId);
+    const schnittstellen = [];
+    for (const o of state.objects) {
+      const f = o.zielFuehrend;
+      if (!f) continue;
+      const users = new Set();
+      for (const t of tasks) {
+        const where = target(t);
+        if (where && where !== f && !off.has(where) && (t.liest.includes(o.id) || t.schreibt.includes(o.id))) users.add(where);
+      }
+      for (const to of users) {
+        const besteht = state.flows.some((x) => x.objectId === o.id && x.from === f && x.to === to && x.art === 'schnittstelle');
+        schnittstellen.push({ objectId: o.id, from: f, to, besteht });
+      }
+    }
+    const umziehenObjekte = state.objects
+      .filter((o) => o.zielFuehrend && zielIds.has(o.zielFuehrend))
+      .map((o) => ({ objectId: o.id, von: leaders(state, o.id), nach: o.zielFuehrend }));
+    const offenAufgaben = tasks.filter((t) => !t.ziel || t.ziel === 'unklar');
+    const offenObjekte = state.objects.filter((o) => !o.zielFuehrend);
+    return {
+      zielsysteme: ziel,
+      umziehen: { aufgaben: tasks.filter((t) => t.ziel === 'wandert'), datenobjekte: umziehenObjekte },
+      bleiben: { aufgaben: tasks.filter((t) => t.ziel === 'bleibt'), systeme: bleiben },
+      entfallen: tasks.filter((t) => t.ziel === 'entfaellt'),
+      abschalten,
+      schnittstellen,
+      offen: { aufgaben: offenAufgaben, datenobjekte: offenObjekte },
+      vollstaendig: offenAufgaben.length === 0 && offenObjekte.length === 0,
+    };
+  }
+
+  /** After the changeover the target picture becomes the new current map
+   * (software-landkarte.r.zwischenstand: the old map is the starting point). */
+  function adoptTarget(state) {
+    const ziel = zielsysteme(state);
+    if (!ziel.length) throw new Error('Es gibt kein Zielsystem.');
+    const u = umstellungsliste(state);
+    const next = clone(state);
+    const off = new Set(u.abschalten.map((s) => s.id));
+    next.meta.vorgaenger = [...(state.meta.vorgaenger || []), {
+      version: state.meta.version, bis: today(),
+      systeme: istSystems(state).map((s) => s.name), abgeschaltet: u.abschalten.map((s) => s.name),
+    }];
+    next.meta.version = (state.meta.version || 1) + 1;
+    next.tasks = next.tasks.filter((t) => t.ziel !== 'entfaellt' && !off.has(t.systemId));
+    for (const t of next.tasks) {
+      if (t.ziel === 'wandert') t.systemId = ziel[0].id;
+      t.ziel = null; t.durchgang = null;
+    }
+    next.systems = next.systems.filter((s) => !off.has(s.id));
+    for (const s of next.systems) { s.zielsystem = false; s.durchgang = null; }
+    next.flows = next.flows.filter((f) => !off.has(f.from) && !off.has(f.to));
+    for (const row of Object.values(next.matrix)) for (const id of off) delete row[id];
+    for (const o of next.objects) {
+      if (!o.zielFuehrend) continue;
+      const row = next.matrix[o.id] || (next.matrix[o.id] = {});
+      for (const [sid, v] of Object.entries(row)) if (v === 'fuehrt' && sid !== o.zielFuehrend) row[sid] = 'liest';
+      row[o.zielFuehrend] = 'fuehrt';
+      o.zielFuehrend = null;
+    }
+    for (const sx of u.schnittstellen) {
+      if (sx.besteht || off.has(sx.from) || off.has(sx.to)) continue;
+      next.flows.push({ id: uid('flow'), objectId: sx.objectId, from: sx.from, to: sx.to, art: 'schnittstelle', haeufigkeit: 'taeglich', aufwand: null });
+    }
+    next.durchgang = null;
+    next.order = {};
+    return touch(next);
+  }
+
+  // Client walkthrough (software-landkarte.r.mandanten-durchgang)
+  /** What goes into the client file: only systems and tasks for the cards. */
+  function clientPayload(state) {
+    const fileId = uid('dg');
+    const systems = istSystems(state).map((s) => ({ id: s.id, name: s.name, art: s.art, zweck: s.zweck, rollen: s.rollen }));
+    const ids = new Set(systems.map((s) => s.id));
+    const tasks = state.tasks.filter((t) => ids.has(t.systemId))
+      .map((t) => ({ id: t.id, name: t.name, systemId: t.systemId, rolle: t.rolle, haeufigkeit: t.haeufigkeit }));
+    state.durchgang = { fileId, erzeugt: today(), eingelesen: null, ergaenzungen: [] };
+    touch(state);
+    return { format: CLIENT_FORMAT, formatVersion: FORMAT_VERSION, fileId, betrieb: state.meta.betrieb, erzeugt: today(), systems, tasks };
+  }
+
+  /** Cards: one per system, then its tasks, then the closing question. */
+  function cards(payload) {
+    const out = [];
+    for (const s of payload.systems) {
+      out.push({ key: `system:${s.id}`, kind: 'system', system: s });
+      for (const t of payload.tasks.filter((x) => x.systemId === s.id)) out.push({ key: `task:${t.id}`, kind: 'task', task: t, system: s });
+    }
+    out.push({ key: 'ergaenzungen', kind: 'ergaenzungen' });
+    return out;
+  }
+
+  function answer(answers, key, wert, text) {
+    if (!wert) { delete answers[key]; return answers; }
+    if (!ANTWORTEN[wert]) throw new Error(`Unbekannte Antwort „${wert}“.`);
+    answers[key] = wert === 'anders' ? { wert, text: text || '' } : { wert };
+    return answers;
+  }
+
+  function progress(payload, answers) {
+    const all = cards(payload).filter((c) => c.kind !== 'ergaenzungen');
+    const done = all.filter((c) => answers[c.key]).length;
+    return { done, total: all.length, percent: all.length ? Math.round((100 * done) / all.length) : 100 };
+  }
+
+  function clientResult(payload, answers, ergaenzungen) {
+    return {
+      format: RESULT_FORMAT, formatVersion: FORMAT_VERSION, fileId: payload.fileId, betrieb: payload.betrieb,
+      datum: today(), antworten: clone(answers), ergaenzungen: (ergaenzungen || []).filter((e) => String(e).trim()),
+    };
+  }
+
+  /** Reads the client's answers back into the office's map, so deviations, additions
+   * and "unsicher" show up marked. */
+  function importResult(state, result) {
+    if (!result || result.format !== RESULT_FORMAT) throw new Error('Die Datei ist kein Ergebnis eines Durchgangs.');
+    if (result.formatVersion > FORMAT_VERSION) throw new Error('Das Ergebnis stammt aus einer neueren Version.');
+    const warnings = [];
+    if (!state.durchgang || state.durchgang.fileId !== result.fileId) warnings.push('Das Ergebnis gehört zu einer anderen Mandanten-Datei als der zuletzt erzeugten. Übernommen wird, was zu den vorhandenen Systemen und Aufgaben passt.');
+    let n = 0;
+    for (const [key, a] of Object.entries(result.antworten || {})) {
+      const [kind, id] = key.split(':');
+      const target = kind === 'system' ? sysById(state, id) : kind === 'task' ? taskById(state, id) : null;
+      if (!target) continue;
+      target.durchgang = { wert: a.wert, text: a.text || '', erledigt: false };
+      n += 1;
+    }
+    state.durchgang = state.durchgang || { fileId: result.fileId, erzeugt: null, ergaenzungen: [] };
+    state.durchgang.eingelesen = today();
+    state.durchgang.ergaenzungen = [
+      ...(state.durchgang.ergaenzungen || []),
+      ...(result.ergaenzungen || []).map((text) => ({ id: uid('erg'), text: String(text), erledigt: false })),
+    ];
+    touch(state);
+    return { uebernommen: n, ergaenzungen: (result.ergaenzungen || []).length, warnings };
+  }
+
+  function durchgangBefunde(state) {
+    const items = [
+      ...state.systems.map((s) => ({ kind: 'system', item: s, label: s.name })),
+      ...state.tasks.map((t) => ({ kind: 'task', item: t, label: `${t.name} (${(sysById(state, t.systemId) || {}).name || '?'})` })),
+    ].filter((x) => x.item.durchgang && !x.item.durchgang.erledigt);
+    return {
+      anders: items.filter((x) => x.item.durchgang.wert === 'anders'),
+      unsicher: items.filter((x) => x.item.durchgang.wert === 'unsicher'),
+      ergaenzungen: ((state.durchgang && state.durchgang.ergaenzungen) || []).filter((e) => !e.erledigt),
+    };
+  }
+
+  // Findings for the report (software-landkarte.r.bericht)
+  function befunde(state, fw) {
+    const mb = medienbrueche(state);
+    const dg = durchgangBefunde(state);
+    return {
+      medienbrueche: mb.list, aufwandSumme: mb.summe,
+      doppelt: state.objects.filter((o) => objectStatus(state, o.id) === 'doppelt'),
+      luecken: state.objects.filter((o) => objectStatus(state, o.id) === 'luecke'),
+      offeneFragen: [
+        ...dg.unsicher.map((x) => ({ quelle: 'Durchgang', text: `Unsicher: ${x.label}` })),
+        ...dg.ergaenzungen.map((e) => ({ quelle: 'Durchgang', text: `Ergänzung des Mandanten: ${e.text}` })),
+      ],
+      abweichungen: dg.anders,
+      ohneProzess: unassigned(state, fw),
+    };
+  }
+
+  // CSV for Excel (software-landkarte.d.ergebnisformat): semicolon, as German Excel expects.
+  function csvCell(v) {
+    let s = v == null ? '' : String(v);
+    if (/^[=+\-@]/.test(s)) s = `'${s}`;
+    return /[;"\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  }
+  const csvRows = (rows) => rows.map((r) => r.map(csvCell).join(';')).join('\r\n') + '\r\n';
+
+  function matrixCsv(state) {
+    const sys = istSystems(state);
+    const ziel = zielsysteme(state).length > 0;
+    const head = ['Datenobjekt', 'Art', ...sys.map((s) => s.name), 'Befund', ...(ziel ? ['Künftig führend'] : [])];
+    const label = { ok: '', doppelt: 'doppelte Pflege', luecke: 'kein führendes System' };
+    const rows = state.objects.map((o) => [
+      o.name, OBJEKTARTEN[o.art] || '', ...sys.map((s) => (cell(state, o.id, s.id) ? ZELLEN[cell(state, o.id, s.id)] : '')),
+      label[objectStatus(state, o.id)], ...(ziel ? [(sysById(state, o.zielFuehrend) || {}).name || 'offen'] : []),
+    ]);
+    return csvRows([head, ...rows]);
+  }
+
+  function aufgabenCsv(state, fw) {
+    const name = (id) => (objById(state, id) || {}).name || id;
+    const head = ['Aufgabe', 'System', 'Rolle', 'Häufigkeit', 'Liest', 'Schreibt', 'Prozess', 'Schritt', 'Teilschritte', 'Zielbild', 'Durchgang'];
+    const rows = state.tasks.filter((t) => !(sysById(state, t.systemId) || {}).zielsystem).map((t) => {
+      const p = inFramework(t, fw) ? fw.prozess(t.prozess) : null;
+      const step = p && t.schritt ? (p.schritte.find((s) => s.id === t.schritt) || {}).name : '';
+      return [
+        t.name, (sysById(state, t.systemId) || {}).name, t.rolle, HAEUFIGKEITEN[t.haeufigkeit],
+        t.liest.map(name).join(', '), t.schreibt.map(name).join(', '), p ? p.name : 'ohne Prozess', step || '',
+        t.schritte.map((s) => s.name).join(' → '), t.ziel ? ZIELE[t.ziel] : '',
+        t.durchgang ? ANTWORTEN[t.durchgang.wert] + (t.durchgang.text ? `: ${t.durchgang.text}` : '') : '',
+      ];
+    });
+    return csvRows([head, ...rows]);
+  }
+
+  /** JSON inside an inline script element: escape every "<" so no closing tag or comment can end it. */
+  const scriptJson = (data) => JSON.stringify(data).replace(/</g, '\\u003c');
+
+  const SL = {
+    FORMAT, FORMAT_VERSION, CLIENT_FORMAT, RESULT_FORMAT,
+    ARTEN, HAEUFIGKEITEN, ZELLEN, FLUSSARTEN, ZIELE, ANTWORTEN, OBJEKTARTEN,
+    uid, today, clone, scriptJson,
+    validateCore, validateModule, validateModules, validateCatalog, resolveFramework, mergedCatalog,
+    emptyState, normalize, toFile, fromFile,
+    istSystems, sysById, objById, taskById,
+    addSystem, updateSystem, removeSystem, addSystemFromCatalog, catalogTasksFor,
+    ensureObject, addObject, removeObject,
+    addTask, addCatalogTask, toggleCatalogTask, updateTask, removeTask, addStep, removeStep, suggestProcess,
+    setCell, cell, leaders, objectStatus,
+    addFlow, updateFlow, removeFlow, isMedienbruch, suggestFlows, medienbrueche, taskBreaks, needsSteps,
+    assignTask, inFramework, sequence, moveInSequence, unassigned, swimlane,
+    zielsysteme, setZielsystem, setTaskZiel, setZielFuehrend, umstellungsliste, adoptTarget,
+    clientPayload, cards, answer, progress, clientResult, importResult, durchgangBefunde,
+    befunde, matrixCsv, aufgabenCsv,
+  };
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = SL;
+  else root.SL = SL;
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+</script>
+<script>/* Software-Landkarte: the report for the conversation with the client
+ * (software-landkarte.r.bericht). Builds an HTML string from the state, so it works in
+ * the browser without a server and in Node tests. Starts with the findings, then the
+ * full lists. */
+(function (root) {
+  'use strict';
+  const SL = typeof module !== 'undefined' && module.exports ? require('./core.js') : root.SL;
+
+  const esc = (v) => String(v == null ? '' : v)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+  // Short cell codes keep the matrix within an A4 page even with 15 systems.
+  const CODES = { fuehrt: 'F', liest: 'L', kopie: 'K' };
+  const SWIM_COLUMNS = 5;
+
+  const REPORT_CSS = `
+.report { font: 10.5pt/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #1d232a; }
+.report h1 { font-size: 18pt; margin: 0 0 .2em; }
+.report h2 { font-size: 13pt; margin: 1.4em 0 .4em; border-bottom: 1px solid #c9d1d9; padding-bottom: .15em; break-after: avoid; }
+.report h3 { font-size: 11pt; margin: 1em 0 .3em; break-after: avoid; }
+.report .meta { color: #57606a; margin: 0 0 1em; }
+.report table { width: 100%; max-width: 100%; border-collapse: collapse; table-layout: fixed; margin: .3em 0 .8em; break-inside: auto; }
+.report th, .report td { border: 1px solid #c9d1d9; padding: 3px 5px; vertical-align: top; text-align: left; overflow-wrap: anywhere; word-break: break-word; hyphens: auto; }
+.report th { background: #f0f3f6; font-weight: 600; }
+.report tr { break-inside: avoid; }
+.report .num { text-align: right; white-space: nowrap; }
+.report .c { text-align: center; }
+.report .tiles { display: flex; flex-wrap: wrap; gap: 8px; margin: .5em 0 1em; }
+.report .tile { border: 1px solid #c9d1d9; border-radius: 6px; padding: 6px 10px; min-width: 110px; }
+.report .tile b { display: block; font-size: 16pt; }
+.report .warn { color: #9a3412; }
+.report .bad { background: #fde8e8; }
+.report .lead { background: #e6f4ea; font-weight: 700; }
+.report .muted { color: #57606a; }
+.report .box { border: 1px solid #8c959f; border-radius: 4px; padding: 3px 5px; background: #fff; }
+.report .box.mb { border: 2px solid #b42318; background: #fff4f2; }
+.report .lane { font-weight: 600; background: #f6f8fa; }
+.report ul { margin: .2em 0 .8em; padding-left: 1.3em; }
+.report .legend { font-size: 9pt; color: #57606a; }
+@media print { .report h2 { break-before: auto; } .report .tile { break-inside: avoid; } }
+`;
+
+  function names(state, ids) { return ids.map((id) => (SL.sysById(state, id) || {}).name || '?').join(', '); }
+  const objName = (state, id) => (SL.objById(state, id) || {}).name || id;
+  const sysName = (state, id) => (SL.sysById(state, id) || {}).name || '?';
+
+  function tile(n, label, bad) {
+    return `<div class="tile${bad && n ? ' warn' : ''}"><b>${esc(n)}</b>${esc(label)}</div>`;
+  }
+
+  function list(items, empty) {
+    return items.length ? `<ul>${items.map((x) => `<li>${x}</li>`).join('')}</ul>` : `<p class="muted">${esc(empty)}</p>`;
+  }
+
+  function matrixTable(state) {
+    const sys = SL.istSystems(state);
+    if (!state.objects.length || !sys.length) return '<p class="muted">Noch keine Datenobjekte oder Systeme.</p>';
+    const head = sys.map((s, i) => `<th class="c" title="${esc(s.name)}">${i + 1}</th>`).join('');
+    const rows = state.objects.map((o) => {
+      const st = SL.objectStatus(state, o.id);
+      const flag = st === 'doppelt' ? ' <span class="warn">⚠ doppelte Pflege</span>' : st === 'luecke' ? ' <span class="warn">⚠ kein führendes System</span>' : '';
+      const cells = sys.map((s) => {
+        const v = SL.cell(state, o.id, s.id);
+        const cls = v === 'fuehrt' ? (st === 'doppelt' ? 'c bad' : 'c lead') : 'c';
+        return `<td class="${cls}">${CODES[v] || ''}</td>`;
+      }).join('');
+      return `<tr><td>${esc(o.name)}${flag}</td>${cells}</tr>`;
+    }).join('');
+    const legend = sys.map((s, i) => `${i + 1} = ${esc(s.name)}`).join(' · ');
+    return `<table class="matrix"><colgroup><col style="width:34%">${sys.map(() => '<col>').join('')}</colgroup>
+<thead><tr><th>Datenobjekt</th>${head}</tr></thead><tbody>${rows}</tbody></table>
+<p class="legend">F = führt · L = liest · K = Kopie · leer = nicht vorhanden. Systeme: ${legend}</p>`;
+  }
+
+  function swimlaneTables(state, fw, procId) {
+    const sl = SL.swimlane(state, fw, procId);
+    if (!sl.columns.length) return '<p class="muted">Noch keine Aufgaben in diesem Prozess.</p>';
+    let html = '';
+    for (let start = 0; start < sl.columns.length; start += SWIM_COLUMNS) {
+      const cols = sl.columns.slice(start, start + SWIM_COLUMNS);
+      const p = sl.prozess;
+      const head = cols.map((c, i) => {
+        const step = c.schritt ? (p.schritte.find((s) => s.id === c.schritt) || {}).name : '';
+        const mark = c.uebergang && c.uebergang.medienbruch ? ' <span class="warn" title="Medienbruch beim Übergang">↯</span>' : '';
+        return `<th>${start + i + 1}. ${esc(step || 'ohne Schritt')}${mark}</th>`;
+      }).join('');
+      const rows = sl.lanes.map((lane) => {
+        const cells = cols.map((c) => {
+          const items = c.items.filter((x) => x.task.systemId === lane.id);
+          return `<td>${items.map((x) => {
+            const br = x.breaks.map((f) => `<div class="warn">⚠ ${esc(objName(state, f.objectId))}: ${esc(SL.FLUSSARTEN[f.art])} aus ${esc(sysName(state, f.from))}</div>`).join('');
+            return `<div class="box${x.breaks.length ? ' mb' : ''}">${esc(x.task.name)}<div class="muted">${esc(x.task.rolle)}</div>${br}</div>`;
+          }).join('')}</td>`;
+        }).join('');
+        return `<tr><td class="lane">${esc(lane.name)}</td>${cells}</tr>`;
+      }).join('');
+      html += `<table class="swimlane"><colgroup><col style="width:20%">${cols.map(() => '<col>').join('')}</colgroup><thead><tr><th>System</th>${head}</tr></thead><tbody>${rows}</tbody></table>`;
+    }
+    return html;
+  }
+
+  function umstellung(state) {
+    const u = SL.umstellungsliste(state);
+    const z = u.zielsysteme.map((s) => esc(s.name)).join(', ');
+    const objRows = state.objects.map((o) => `<tr><td>${esc(o.name)}</td><td>${esc(names(state, SL.leaders(state, o.id))) || '<span class="warn">keines</span>'}</td><td>${o.zielFuehrend ? esc(sysName(state, o.zielFuehrend)) : '<span class="warn">offen</span>'}</td></tr>`).join('');
+    return `<h2>Umstellungsliste: ${z}</h2>
+<h3>Zieht in die neue Software um</h3>
+${list([
+    ...u.umziehen.aufgaben.map((t) => `Aufgabe: ${esc(t.name)} <span class="muted">(bisher ${esc(sysName(state, t.systemId))})</span>`),
+    ...u.umziehen.datenobjekte.map((x) => `Führend für ${esc(objName(state, x.objectId))} <span class="muted">(bisher ${esc(names(state, x.von)) || 'keines'})</span>`),
+  ], 'Nichts.')}
+<h3>Braucht eine Schnittstelle</h3>
+${list(u.schnittstellen.map((x) => `${esc(objName(state, x.objectId))}: ${esc(sysName(state, x.from))} → ${esc(sysName(state, x.to))}${x.besteht ? ' <span class="muted">(besteht schon)</span>' : ''}`), 'Keine.')}
+<h3>Kann abgeschaltet werden</h3>
+${list(u.abschalten.map((s) => esc(s.name)), 'Keines.')}
+<h3>Entfällt</h3>
+${list(u.entfallen.map((t) => `${esc(t.name)} <span class="muted">(${esc(sysName(state, t.systemId))})</span>`), 'Nichts.')}
+<h3>Noch offen: Fragen an den Anbieter</h3>
+${list([
+    ...u.offen.aufgaben.map((t) => `Aufgabe ${esc(t.name)} <span class="muted">(${esc(sysName(state, t.systemId))})</span>: ${t.ziel === 'unklar' ? 'unklar' : 'noch nicht entschieden'}`),
+    ...u.offen.datenobjekte.map((o) => `Welches System führt künftig ${esc(o.name)}?`),
+  ], 'Alles entschieden.')}
+<h3>Ist und Ziel</h3>
+<table><colgroup><col style="width:34%"><col><col></colgroup><thead><tr><th>Datenobjekt</th><th>Heute führend</th><th>Künftig führend</th></tr></thead><tbody>${objRows}</tbody></table>`;
+  }
+
+  /** The report body; wrap it with reportDocument() for a standalone file. */
+  function render(state, fw) {
+    const b = SL.befunde(state, fw);
+    const sys = SL.istSystems(state);
+    const hasZiel = SL.zielsysteme(state).length > 0;
+    const mbRows = b.medienbrueche.map((f) => `<tr><td>${esc(objName(state, f.objectId))}</td><td>${esc(sysName(state, f.from))} → ${esc(sysName(state, f.to))}</td><td>${esc(SL.FLUSSARTEN[f.art])}</td><td>${esc(SL.HAEUFIGKEITEN[f.haeufigkeit] || '')}</td><td class="num">${f.aufwand ? esc(f.aufwand) : '–'}</td></tr>`).join('');
+    const procs = fw.prozesse.map((p) => `<h3>${esc(p.name)}${p.modul ? ` <span class="muted">(Modul ${esc(p.modul)})</span>` : ''}</h3>${swimlaneTables(state, fw, p.id)}`).join('');
+    const sysRows = sys.map((s, i) => `<tr><td class="c">${i + 1}</td><td>${esc(s.name)}</td><td>${esc(SL.ARTEN[s.art])}</td><td>${esc(s.zweck)}</td><td>${esc(s.rollen.join(', '))}</td></tr>`).join('');
+    const taskRows = state.tasks.filter((t) => !(SL.sysById(state, t.systemId) || {}).zielsystem).map((t) => {
+      const p = SL.inFramework(t, fw) ? fw.prozess(t.prozess) : null;
+      const steps = t.schritte.length ? `<div class="muted">${t.schritte.map((s) => esc(s.name)).join(' → ')}</div>` : '';
+      return `<tr><td>${esc(t.name)}${steps}</td><td>${esc(sysName(state, t.systemId))}</td><td>${esc(t.rolle)}</td><td>${esc(SL.HAEUFIGKEITEN[t.haeufigkeit])}</td><td>${p ? esc(p.name) : '<span class="warn">ohne Prozess</span>'}</td></tr>`;
+    }).join('');
+    return `<div class="report">
+<h1>Software-Landkarte${state.meta.betrieb ? `: ${esc(state.meta.betrieb)}` : ''}</h1>
+<p class="meta">Stand ${esc(state.meta.geaendert)} · Fassung ${esc(state.meta.version)}${state.meta.module.length ? ` · Module: ${esc(state.meta.module.join(', '))}` : ''}</p>
+<h2>Befunde</h2>
+<div class="tiles">${tile(b.medienbrueche.length, 'Medienbrüche', true)}${tile(b.doppelt.length, 'doppelte Pflege', true)}${tile(b.luecken.length, 'ohne führendes System', true)}${tile(b.offeneFragen.length, 'offene Fragen', true)}${b.aufwandSumme ? tile(b.aufwandSumme, 'Minuten im Monat für Medienbrüche', true) : ''}</div>
+<h3>Medienbrüche</h3>
+${b.medienbrueche.length ? `<table><colgroup><col style="width:22%"><col style="width:30%"><col style="width:20%"><col style="width:14%"><col style="width:14%"></colgroup><thead><tr><th>Datenobjekt</th><th>Weg</th><th>Art</th><th>Häufigkeit</th><th class="num">Min./Monat</th></tr></thead><tbody>${mbRows}</tbody>${b.aufwandSumme ? `<tfoot><tr><th colspan="4">Summe</th><th class="num">${esc(b.aufwandSumme)}</th></tr></tfoot>` : ''}</table>` : '<p class="muted">Keine.</p>'}
+<h3>Doppelte Pflege</h3>
+${list(b.doppelt.map((o) => `${esc(o.name)}: führend in ${esc(names(state, SL.leaders(state, o.id)))}`), 'Keine.')}
+<h3>Kein führendes System</h3>
+${list(b.luecken.map((o) => esc(o.name)), 'Keine Lücken.')}
+<h3>Offene Fragen</h3>
+${list(b.offeneFragen.map((q) => esc(q.text)), 'Keine.')}
+${b.abweichungen.length ? `<h3>Abweichungen aus dem Durchgang</h3>${list(b.abweichungen.map((x) => `${esc(x.label)}: ${esc(x.item.durchgang.text || 'anders')}`), '')}` : ''}
+${hasZiel ? umstellung(state) : ''}
+<h2>Landkarte: wo liegen die Daten?</h2>
+${matrixTable(state)}
+<h2>Prozesse</h2>
+${procs}
+<h3>Ohne Prozess</h3>
+${list(b.ohneProzess.map((t) => `${esc(t.name)} <span class="muted">(${esc(sysName(state, t.systemId))})</span>`), 'Jede Aufgabe gehört zu einem Prozess.')}
+<h2>Systeme</h2>
+${sys.length ? `<table><colgroup><col style="width:6%"><col style="width:24%"><col style="width:16%"><col style="width:34%"><col style="width:20%"></colgroup><thead><tr><th>Nr.</th><th>System</th><th>Art</th><th>Zweck</th><th>Rollen</th></tr></thead><tbody>${sysRows}</tbody></table>` : '<p class="muted">Keine.</p>'}
+<h2>Aufgaben</h2>
+${taskRows ? `<table><colgroup><col style="width:34%"><col style="width:20%"><col style="width:14%"><col style="width:12%"><col style="width:20%"></colgroup><thead><tr><th>Aufgabe</th><th>System</th><th>Rolle</th><th>Häufigkeit</th><th>Prozess</th></tr></thead><tbody>${taskRows}</tbody></table>` : '<p class="muted">Keine.</p>'}
+</div>`;
+  }
+
+  /** A standalone file: no scripts, no network (software-landkarte.r.lokal). */
+  function reportDocument(state, fw) {
+    return `<!DOCTYPE html>
+<html lang="de"><head><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bericht Software-Landkarte${state.meta.betrieb ? ` – ${esc(state.meta.betrieb)}` : ''}</title>
+<style>@page { size: A4; margin: 15mm; } body { margin: 0 auto; max-width: 180mm; padding: 10mm 0; background: #fff; }${REPORT_CSS}</style>
+</head><body>${render(state, fw)}</body></html>`;
+  }
+
+  const api = { esc, render, reportDocument, REPORT_CSS, swimlane: swimlaneTables, umstellung, matrix: matrixTable };
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.SL.report = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+</script>
+<script>/* Software-Landkarte: the user interface. One file, two modes
+ * (software-landkarte.d.werkzeugform): the office mode to capture and evaluate, and the
+ * client mode that only shows the walkthrough cards. */
+(function () {
+  'use strict';
+  const SL = window.SL;
+  const DATA = JSON.parse(document.getElementById('sl-data').textContent);
+  const EMBED = JSON.parse(document.getElementById('sl-embed').textContent);
+  // The untouched page, captured before anything renders: the client file is a copy of it.
+  const PRISTINE = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+  // Split so the closing tag never appears literally inside this inline script.
+  const END = '</' + 'script>';
+  const EMBED_TAG = `<script id="sl-embed" type="application/json">null${END}`;
+  const app = document.getElementById('app');
+  const reportStyle = document.createElement('style');
+  reportStyle.textContent = SL.report.REPORT_CSS;
+  document.head.append(reportStyle);
+
+  // ------------------------------------------------------------ helpers
+
+  function h(tag, props, ...kids) {
+    const el = document.createElement(tag);
+    let value;
+    for (const [k, v] of Object.entries(props || {})) {
+      if (v == null || v === false) continue;
+      if (k.startsWith('on')) el.addEventListener(k.slice(2).toLowerCase(), v);
+      else if (k === 'class') el.className = v;
+      else if (k === 'value') value = v;
+      else if (k === 'checked' || k === 'disabled' || k === 'selected') el[k] = !!v;
+      else if (k === 'k') el.dataset.k = v;
+      else if (k === 'html') el.innerHTML = v; // only for strings built by SL.report, which escapes
+      else el.setAttribute(k, v === true ? '' : v);
+    }
+    for (const kid of kids.flat(Infinity)) {
+      if (kid == null || kid === false) continue;
+      el.append(kid instanceof Node ? kid : document.createTextNode(String(kid)));
+    }
+    if (value !== undefined) el.value = value;
+    return el;
+  }
+
+  const options = (map, current, empty) => [
+    empty != null ? h('option', { value: '' }, empty) : null,
+    ...Object.entries(map).filter(([k]) => k !== '').map(([k, label]) => h('option', { value: k, selected: k === current }, label)),
+  ];
+
+  function toast(msg) {
+    const t = h('div', { class: 'toast', role: 'status' }, msg);
+    document.body.append(t);
+    setTimeout(() => t.remove(), 4000);
+  }
+
+  function download(name, text, type) {
+    const blob = new Blob([text], { type });
+    const a = h('a', { href: URL.createObjectURL(blob), download: name, class: 'no-print' });
+    document.body.append(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 2000);
+  }
+
+  function pickFile(accept, onText) {
+    const input = h('input', { type: 'file', accept, style: 'display:none' });
+    input.addEventListener('change', () => {
+      const f = input.files[0];
+      if (!f) return;
+      const r = new FileReader();
+      r.onload = () => { try { onText(String(r.result)); } catch (e) { toast(e.message); } input.remove(); };
+      r.readAsText(f);
+    });
+    document.body.append(input);
+    input.click();
+  }
+
+  const slug = (s) => (s || 'landkarte').toLowerCase().normalize('NFKD').replace(/[^\w\s-]/g, '').trim().replace(/[\s_]+/g, '-').slice(0, 40) || 'landkarte';
+  const storage = {
+    get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* private window: keep working without */ } },
+  };
+
+  if (EMBED && EMBED.mode === 'mandant') return walkthrough(EMBED.payload);
+  office();
+
+  // ------------------------------------------------------------ office mode
+
+  function office() {
+    const KEY = 'software-landkarte:kanzlei';
+    let state = load();
+    let tab = 'betrieb';
+    let pending = null;
+
+    function load() {
+      const raw = storage.get(KEY);
+      if (raw) { try { return SL.fromFile(raw); } catch (e) { /* fall through to a new map */ } }
+      return SL.emptyState();
+    }
+    const fw = () => SL.resolveFramework(DATA.prozesse, DATA.module, state.meta.module);
+    const cat = () => SL.mergedCatalog(DATA.katalog, DATA.module, state.meta.module);
+    const save = () => storage.set(KEY, SL.toFile(state));
+
+    // Re-render after the event, so a Tab key has already moved focus; focus is restored by data-k.
+    function commit() {
+      save();
+      if (pending) return;
+      pending = setTimeout(() => { pending = null; render(); }, 0);
+    }
+    const act = (fn) => (ev) => { try { fn(ev); commit(); } catch (e) { toast(e.message); } };
+    const fileBase = () => `${slug(state.meta.betrieb)}-${SL.today()}`;
+
+    const TABS = [
+      ['betrieb', 'Betrieb'], ['systeme', 'Systeme'], ['aufgaben', 'Aufgaben'], ['daten', 'Daten'],
+      ['fluesse', 'Flüsse'], ['prozesse', 'Prozesse'], ['zielbild', 'Zielbild'], ['durchgang', 'Durchgang'], ['bericht', 'Bericht'],
+    ];
+
+    function render() {
+      const focusKey = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.k : null;
+      const counts = {
+        systeme: SL.istSystems(state).length, aufgaben: state.tasks.length, daten: state.objects.length, fluesse: state.flows.length,
+      };
+      const view = { betrieb, systeme, aufgaben, daten, fluesse, prozesse, zielbild, durchgang, bericht }[tab]();
+      app.replaceChildren(
+        h('header', { class: 'top' },
+          h('h1', {}, 'Software-Landkarte'),
+          h('span', { class: 'sub' }, state.meta.betrieb || 'neuer Betrieb', ` · Fassung ${state.meta.version} · Stand ${state.meta.geaendert}`)),
+        h('nav', { class: 'tabs', role: 'tablist' }, TABS.map(([id, label]) => h('button', {
+          role: 'tab', 'aria-selected': String(tab === id), 'data-tab': id,
+          onclick: () => { tab = id; render(); window.scrollTo(0, 0); },
+        }, label, counts[id] != null ? h('span', { class: 'count' }, counts[id]) : null))),
+        h('main', {}, view),
+      );
+      if (focusKey) {
+        const el = app.querySelector(`[data-k="${CSS.escape(focusKey)}"]`);
+        if (el) el.focus();
+      }
+    }
+
+    // --- Betrieb
+
+    function betrieb() {
+      return [
+        h('section', { class: 'panel' },
+          h('h2', {}, 'Betrieb'),
+          h('div', { class: 'row' },
+            h('label', { for: 'betrieb' }, 'Name des Betriebs'),
+            h('input', { id: 'betrieb', k: 'betrieb', type: 'text', class: 'grow', value: state.meta.betrieb,
+              onchange: act((e) => { state.meta.betrieb = e.target.value.trim(); }) })),
+          h('p', { class: 'hint' }, 'Personen werden als Rollen erfasst (Buchhaltung, Inhaber), nicht mit Namen. Die Landkarte bleibt auf diesem Gerät, bis Sie sie speichern und weitergeben.')),
+        h('section', { class: 'panel' },
+          h('h2', {}, 'Branchenmodule'),
+          h('p', { class: 'hint' }, 'Der Kern (Einkauf, Auftrag, Personal, Buchhaltung) gilt immer. Module bringen Prozesse, Schritte, Datenobjekte und Software ihrer Branche mit; mehrere sind möglich.'),
+          DATA.module.map((m) => h('div', { class: 'row' }, h('label', {},
+            h('input', { type: 'checkbox', 'data-modul': m.id, checked: state.meta.module.includes(m.id),
+              onchange: act((e) => {
+                const set = new Set(state.meta.module);
+                if (e.target.checked) set.add(m.id); else set.delete(m.id);
+                state.meta.module = DATA.module.map((x) => x.id).filter((id) => set.has(id));
+              }) }),
+            ' ', h('b', {}, m.name), m.beschreibung ? ` – ${m.beschreibung}` : '')))),
+        h('section', { class: 'panel' },
+          h('h2', {}, 'Datei'),
+          h('div', { class: 'row' },
+            h('button', { class: 'primary', id: 'save-json', onclick: () => download(`${fileBase()}.landkarte.json`, SL.toFile(state), 'application/json') }, 'Landkarte speichern'),
+            h('button', { id: 'open-json', onclick: () => pickFile('.json,application/json', (text) => {
+              state = SL.fromFile(text); commit(); toast('Landkarte geöffnet.');
+            }) }, 'Landkarte öffnen …'),
+            h('button', { id: 'new-map', onclick: () => { if (confirm('Neue, leere Landkarte beginnen? Der jetzige Stand geht verloren, wenn er nicht gespeichert ist.')) { state = SL.emptyState(); commit(); } } }, 'Neue Landkarte'),
+            h('button', { id: 'load-example', onclick: () => { if (!state.systems.length || confirm('Den erfundenen Beispielbetrieb laden? Der jetzige Stand wird ersetzt.')) { state = SL.normalize(SL.clone(DATA.beispiel)); commit(); } } }, 'Beispielbetrieb laden')),
+          h('p', { class: 'hint' }, 'Der Stand wird in diesem Browser automatisch gesichert. Die gespeicherte Datei (.landkarte.json) lässt sich jederzeit wieder öffnen, auch als Ausgangspunkt nach einer Umstellung.'),
+          state.meta.vorgaenger.length ? h('div', {}, h('h3', {}, 'Frühere Fassungen'), h('ul', {}, state.meta.vorgaenger.map((v) =>
+            h('li', {}, `Fassung ${v.version} bis ${v.bis}: ${v.systeme.length} Systeme`, v.abgeschaltet.length ? `, abgeschaltet: ${v.abgeschaltet.join(', ')}` : ''))))
+            : null),
+      ];
+    }
+
+    // --- Systeme (software-landkarte.r.systeme)
+
+    function catalogSelect(id, filter) {
+      const groups = {};
+      for (const sw of cat().software.filter(filter || (() => true))) (groups[sw.kategorie] = groups[sw.kategorie] || []).push(sw);
+      return h('select', { id, class: 'grow' }, h('option', { value: '' }, '– aus dem Katalog wählen –'),
+        Object.entries(groups).map(([g, list]) => h('optgroup', { label: g }, list.map((sw) => h('option', { value: sw.id }, sw.name)))));
+    }
+
+    function rolesList() {
+      return h('datalist', { id: 'rollen' }, (DATA.katalog.rollen || []).map((r) => h('option', { value: r })));
+    }
+
+    function durchgangBadge(item) {
+      if (!item.durchgang) return null;
+      const d = item.durchgang;
+      const cls = d.wert === 'ok' ? 'ok' : d.wert === 'anders' ? 'bad' : 'warn';
+      return h('span', { class: `badge ${cls}`, title: d.text || '' }, `Mandant: ${SL.ANTWORTEN[d.wert]}${d.text ? ` – ${d.text}` : ''}${d.erledigt ? ' (erledigt)' : ''}`);
+    }
+
+    function systeme() {
+      const free = { name: '', art: 'lokal' };
+      return [
+        rolesList(),
+        h('section', { class: 'panel' },
+          h('h2', {}, 'System hinzufügen'),
+          h('div', { class: 'row' }, catalogSelect('cat-system'),
+            h('button', { class: 'primary', id: 'add-cat-system', onclick: act(() => {
+              const v = document.getElementById('cat-system').value;
+              if (!v) throw new Error('Bitte erst ein System aus dem Katalog wählen.');
+              SL.addSystemFromCatalog(state, cat(), v, fw());
+            }) }, 'Aus Katalog hinzufügen')),
+          h('p', { class: 'hint' }, 'Mit einem Katalogsystem kommen seine typischen Aufgaben; im Reiter Aufgaben lassen sie sich einzeln ab- und anwählen.'),
+          h('div', { class: 'row' },
+            h('input', { type: 'text', id: 'free-system', class: 'grow', placeholder: 'Eigenes System, z. B. „Preisliste Excel“ oder „Ordner Lieferscheine“', oninput: (e) => { free.name = e.target.value; } }),
+            h('select', { id: 'free-system-art', onchange: (e) => { free.art = e.target.value; } }, options(SL.ARTEN, 'lokal')),
+            h('button', { id: 'add-free-system', onclick: act(() => SL.addSystem(state, free)) }, 'Anlegen'))),
+        h('section', { class: 'panel' },
+          h('h2', {}, `Systeme (${state.systems.length})`),
+          state.systems.length ? null : h('p', { class: 'hint' }, 'Noch keine Systeme. Auch Excel-Listen, Papier und Postfächer zählen.'),
+          state.systems.map((s) => h('div', { class: `card${s.durchgang ? ` flag-${s.durchgang.wert}` : ''}`, 'data-system': s.id },
+            h('div', { class: 'row' },
+              h('input', { type: 'text', k: `sys-name-${s.id}`, class: 'grow', value: s.name, 'aria-label': 'Name', onchange: act((e) => SL.updateSystem(state, s.id, { name: e.target.value.trim() || s.name })) }),
+              h('select', { k: `sys-art-${s.id}`, 'aria-label': 'Art', onchange: act((e) => SL.updateSystem(state, s.id, { art: e.target.value })) }, options(SL.ARTEN, s.art)),
+              s.zielsystem ? h('span', { class: 'badge ok' }, 'Zielsystem') : null,
+              durchgangBadge(s),
+              h('button', { class: 'danger', onclick: act(() => { if (confirm(`„${s.name}“ mit allen Aufgaben und Flüssen entfernen?`)) SL.removeSystem(state, s.id); }) }, 'Entfernen')),
+            h('div', { class: 'row' },
+              h('input', { type: 'text', k: `sys-zweck-${s.id}`, class: 'grow', value: s.zweck, placeholder: 'Zweck in einem Satz', 'aria-label': 'Zweck', onchange: act((e) => SL.updateSystem(state, s.id, { zweck: e.target.value })) }),
+              h('input', { type: 'text', k: `sys-rollen-${s.id}`, class: 'grow', list: 'rollen', value: s.rollen.join(', '), placeholder: 'Rollen, mit Komma getrennt', 'aria-label': 'Rollen', onchange: act((e) => SL.updateSystem(state, s.id, { rollen: e.target.value.split(',').map((x) => x.trim()).filter(Boolean) })) }))))),
+      ];
+    }
+
+    // --- Aufgaben (software-landkarte.r.aufgaben)
+
+    function processSelect(t, f, k) {
+      const el = h('select', { k, 'aria-label': 'Prozess und Schritt', 'data-prozess': t.id, onchange: act((e) => {
+        const [p, s] = e.target.value.split(':');
+        SL.assignTask(state, t.id, p || null, s || null);
+      }) },
+      h('option', { value: '' }, '– ohne Prozess –'),
+      f.prozesse.map((p) => h('optgroup', { label: p.name },
+        h('option', { value: `${p.id}:` }, `${p.name} (ohne Schritt)`),
+        p.schritte.map((s) => h('option', { value: `${p.id}:${s.id}` }, s.name)))));
+      el.value = t.prozess && SL.inFramework(t, f) ? `${t.prozess}:${t.schritt || ''}` : '';
+      return el;
+    }
+
+    function objectChecks(t, field) {
+      if (!state.objects.length) return h('span', { class: 'hint' }, 'Noch keine Datenobjekte (Reiter Daten).');
+      return h('div', { class: 'checks' }, state.objects.map((o) => h('label', {},
+        h('input', { type: 'checkbox', checked: t[field].includes(o.id), onchange: act((e) => {
+          const set = new Set(t[field]);
+          if (e.target.checked) set.add(o.id); else set.delete(o.id);
+          SL.updateTask(state, t.id, { [field]: [...set] });
+        }) }), ' ', o.name)));
+    }
+
+    function taskCard(t, f) {
+      const breaks = SL.taskBreaks(state, t);
+      const hint = SL.needsSteps(state, t);
+      let stepName = '';
+      return h('div', { class: `card${t.durchgang ? ` flag-${t.durchgang.wert}` : ''}`, 'data-task': t.id },
+        h('div', { class: 'row' },
+          h('input', { type: 'text', k: `task-name-${t.id}`, class: 'grow', value: t.name, 'aria-label': 'Bezeichnung', onchange: act((e) => SL.updateTask(state, t.id, { name: e.target.value.trim() || t.name })) }),
+          h('input', { type: 'text', k: `task-rolle-${t.id}`, list: 'rollen', value: t.rolle, placeholder: 'Rolle', 'aria-label': 'Rolle', size: 12, onchange: act((e) => SL.updateTask(state, t.id, { rolle: e.target.value.trim() })) }),
+          h('select', { k: `task-hf-${t.id}`, 'aria-label': 'Häufigkeit', onchange: act((e) => SL.updateTask(state, t.id, { haeufigkeit: e.target.value })) }, options(SL.HAEUFIGKEITEN, t.haeufigkeit)),
+          processSelect(t, f, `task-proc-${t.id}`),
+          breaks.length ? h('span', { class: 'badge bad' }, `Medienbruch (${breaks.length})`) : null,
+          durchgangBadge(t),
+          h('button', { class: 'danger', 'aria-label': `Aufgabe ${t.name} entfernen`, onclick: act(() => SL.removeTask(state, t.id)) }, '×')),
+        h('details', {},
+          h('summary', {}, `Daten und Schritte${t.schritte.length ? ` (${t.schritte.length} Schritte)` : ''}`, hint ? h('span', { class: 'badge warn' }, 'Zerlegen empfohlen') : null),
+          h('div', {}, h('b', {}, 'Liest: '), objectChecks(t, 'liest')),
+          h('div', {}, h('b', {}, 'Schreibt: '), objectChecks(t, 'schreibt')),
+          h('div', {}, h('b', {}, 'Schritte '), h('span', { class: 'hint' }, 'nur, wo ein Medienbruch oder doppelte Pflege genauer angesehen werden muss'),
+            h('ol', {}, t.schritte.map((s) => h('li', {}, s.name, ' ', h('button', { class: 'link', onclick: act(() => SL.removeStep(state, t.id, s.id)) }, 'entfernen')))),
+            h('div', { class: 'row' },
+              h('input', { type: 'text', class: 'grow', placeholder: 'Schritt, z. B. „Preis aus der Excel-Liste abtippen“', 'data-step-input': t.id, oninput: (e) => { stepName = e.target.value; } }),
+              h('button', { 'data-add-step': t.id, onclick: act(() => SL.addStep(state, t.id, stepName)) }, 'Schritt hinzufügen')))));
+    }
+
+    function aufgaben() {
+      const f = fw();
+      const c = cat();
+      const systems = SL.istSystems(state);
+      if (!systems.length) return h('section', { class: 'panel' }, h('p', {}, 'Bitte zuerst Systeme erfassen.'));
+      return [rolesList(), systems.map((s) => {
+        const proposals = SL.catalogTasksFor(c, s);
+        const tasks = state.tasks.filter((t) => t.systemId === s.id);
+        let name = '';
+        return h('section', { class: 'panel', 'data-system-tasks': s.id },
+          h('h2', {}, s.name, h('span', { class: 'badge' }, SL.ARTEN[s.art])),
+          proposals.length ? h('div', {}, h('h3', {}, 'Typische Aufgaben aus dem Katalog'),
+            h('div', { class: 'checks' }, proposals.map((p) => h('label', {},
+              h('input', { type: 'checkbox', 'data-cat-task': `${s.id}/${p.id}`, checked: tasks.some((t) => t.catalogRef === `${s.catalogId}/${p.id}`),
+                onchange: act((e) => SL.toggleCatalogTask(state, c, s.id, p.id, e.target.checked, f)) }), ' ', p.name)))) : null,
+          h('h3', {}, `Aufgaben (${tasks.length})`),
+          tasks.map((t) => taskCard(t, f)),
+          h('div', { class: 'row' },
+            h('input', { type: 'text', class: 'grow', placeholder: 'Eigene Aufgabe', 'data-free-task': s.id, oninput: (e) => { name = e.target.value; } }),
+            h('button', { 'data-add-task': s.id, onclick: act(() => SL.addTask(state, { name, systemId: s.id }, f)) }, 'Aufgabe anlegen')));
+      })];
+    }
+
+    // --- Daten (software-landkarte.r.datenobjekte)
+
+    function daten() {
+      const c = cat();
+      const sys = SL.istSystems(state);
+      const free = { name: '', art: 'stamm' };
+      const status = (st) => (st === 'doppelt' ? h('span', { class: 'badge bad' }, 'doppelte Pflege') : st === 'luecke' ? h('span', { class: 'badge warn' }, 'kein führendes System') : null);
+      return [
+        h('section', { class: 'panel' },
+          h('h2', {}, 'Datenobjekte'),
+          h('div', { class: 'checks' }, c.datenobjekte.map((o) => h('label', {},
+            h('input', { type: 'checkbox', 'data-cat-object': o.id, checked: !!SL.objById(state, o.id), onchange: act((e) => {
+              if (e.target.checked) SL.ensureObject(state, c, o.id); else SL.removeObject(state, o.id);
+            }) }), ' ', o.name))),
+          h('div', { class: 'row' },
+            h('input', { type: 'text', id: 'free-object', class: 'grow', placeholder: 'Eigenes Datenobjekt', oninput: (e) => { free.name = e.target.value; } }),
+            h('select', { onchange: (e) => { free.art = e.target.value; } }, options(SL.OBJEKTARTEN, 'stamm')),
+            h('button', { id: 'add-object', onclick: act(() => SL.addObject(state, free)) }, 'Anlegen'))),
+        h('section', { class: 'panel' },
+          h('h2', {}, 'Landkarte: wo liegen die Daten?'),
+          h('p', { class: 'hint' }, 'Je Datenobjekt genau ein führendes System: dort wird angelegt und geändert. Alle anderen lesen oder haben eine Kopie.'),
+          state.objects.length && sys.length ? h('div', { class: 'scroll' }, h('table', { class: 'grid', id: 'matrix' },
+            h('thead', {}, h('tr', {}, h('th', {}, 'Datenobjekt'), sys.map((s) => h('th', {}, s.name)), h('th', {}, 'Befund'))),
+            h('tbody', {}, state.objects.map((o) => {
+              const st = SL.objectStatus(state, o.id);
+              return h('tr', { 'data-object': o.id }, h('td', {}, o.name),
+                sys.map((s) => {
+                  const v = SL.cell(state, o.id, s.id);
+                  return h('td', { class: v === 'fuehrt' ? (st === 'doppelt' ? 'dup' : 'lead') : '' },
+                    h('select', { k: `cell-${o.id}-${s.id}`, 'data-cell': `${o.id}|${s.id}`, 'aria-label': `${o.name} in ${s.name}`, onchange: act((e) => SL.setCell(state, o.id, s.id, e.target.value)) },
+                      Object.entries(SL.ZELLEN).map(([k, label]) => h('option', { value: k, selected: k === v }, k ? label : '–'))));
+                }),
+                h('td', {}, status(st), h('button', { class: 'link', onclick: act(() => SL.removeObject(state, o.id)) }, 'entfernen')));
+            }))))
+            : h('p', { class: 'hint' }, 'Erst Systeme und Datenobjekte anlegen.')),
+      ];
+    }
+
+    // --- Flüsse (software-landkarte.r.datenfluesse, software-landkarte.r.aufwand)
+
+    function sysOptions(current) { return SL.istSystems(state).map((s) => h('option', { value: s.id, selected: s.id === current }, s.name)); }
+    function objOptions(current) { return state.objects.map((o) => h('option', { value: o.id, selected: o.id === current }, o.name)); }
+
+    function fluesse() {
+      const sugg = SL.suggestFlows(state);
+      const sys = SL.istSystems(state);
+      const draft = { objectId: (state.objects[0] || {}).id, from: (sys[0] || {}).id, to: (sys[1] || {}).id, art: 'manuell', haeufigkeit: 'monatlich' };
+      const mb = SL.medienbrueche(state);
+      return [
+        sugg.length ? h('section', { class: 'panel', id: 'flow-suggestions' },
+          h('h2', {}, `Vorgeschlagene Flüsse (${sugg.length})`),
+          h('p', { class: 'hint' }, 'Eine Aufgabe schreibt hier ein Datenobjekt in ein System, das es nicht führt. Wie kommen die Daten vom führenden System dorthin?'),
+          sugg.map((s) => {
+            let art = 'manuell';
+            return h('div', { class: 'row card', 'data-suggestion': `${s.objectId}|${s.from}|${s.to}` },
+              h('span', { class: 'grow' }, h('b', {}, SL.objById(state, s.objectId).name), `: ${SL.sysById(state, s.from).name} → ${SL.sysById(state, s.to).name}`,
+                h('span', { class: 'hint' }, ` (Aufgabe „${(SL.taskById(state, s.taskId) || {}).name}“)`)),
+              h('select', { onchange: (e) => { art = e.target.value; } }, options(SL.FLUSSARTEN, 'manuell')),
+              h('button', { class: 'primary', onclick: act(() => SL.addFlow(state, { objectId: s.objectId, from: s.from, to: s.to, art })) }, 'Übernehmen'));
+          })) : null,
+        h('section', { class: 'panel' },
+          h('h2', {}, `Datenflüsse (${state.flows.length})`, mb.list.length ? h('span', { class: 'badge bad' }, `${mb.list.length} Medienbrüche${mb.summe ? `, ${mb.summe} Min./Monat` : ''}`) : null),
+          state.flows.length ? h('div', { class: 'scroll' }, h('table', { class: 'grid', id: 'flows' },
+            h('thead', {}, h('tr', {}, ['Datenobjekt', 'Von', 'Nach', 'Art', 'Häufigkeit', 'Aufwand Min./Monat', ''].map((x) => h('th', {}, x)))),
+            h('tbody', {}, state.flows.map((fl) => h('tr', { 'data-flow': fl.id, class: SL.isMedienbruch(fl) ? 'dup' : '' },
+              h('td', {}, h('select', { k: `fl-o-${fl.id}`, onchange: act((e) => SL.updateFlow(state, fl.id, { objectId: e.target.value })) }, objOptions(fl.objectId))),
+              h('td', {}, h('select', { k: `fl-f-${fl.id}`, onchange: act((e) => SL.updateFlow(state, fl.id, { from: e.target.value })) }, sysOptions(fl.from))),
+              h('td', {}, h('select', { k: `fl-t-${fl.id}`, onchange: act((e) => SL.updateFlow(state, fl.id, { to: e.target.value })) }, sysOptions(fl.to))),
+              h('td', {}, h('select', { k: `fl-a-${fl.id}`, onchange: act((e) => SL.updateFlow(state, fl.id, { art: e.target.value })) }, options(SL.FLUSSARTEN, fl.art)),
+                SL.isMedienbruch(fl) ? h('span', { class: 'badge bad' }, 'Medienbruch') : null),
+              h('td', {}, h('select', { k: `fl-h-${fl.id}`, onchange: act((e) => SL.updateFlow(state, fl.id, { haeufigkeit: e.target.value })) }, options(SL.HAEUFIGKEITEN, fl.haeufigkeit))),
+              h('td', {}, SL.isMedienbruch(fl) ? h('input', { type: 'number', min: 0, step: 5, k: `fl-m-${fl.id}`, 'data-aufwand': fl.id, value: fl.aufwand == null ? '' : fl.aufwand, 'aria-label': 'Aufwand in Minuten pro Monat',
+                onchange: act((e) => SL.updateFlow(state, fl.id, { aufwand: e.target.value === '' ? null : Math.max(0, Number(e.target.value)) })) }) : h('span', { class: 'hint' }, '–')),
+              h('td', {}, h('button', { class: 'danger', onclick: act(() => SL.removeFlow(state, fl.id)) }, '×'))))))) : h('p', { class: 'hint' }, 'Noch keine Flüsse.'),
+          state.objects.length && sys.length > 1 ? h('div', { class: 'row', id: 'new-flow' },
+            h('select', { 'aria-label': 'Datenobjekt', onchange: (e) => { draft.objectId = e.target.value; } }, objOptions(draft.objectId)),
+            h('select', { 'aria-label': 'Von', onchange: (e) => { draft.from = e.target.value; } }, sysOptions(draft.from)), '→',
+            h('select', { 'aria-label': 'Nach', onchange: (e) => { draft.to = e.target.value; } }, sysOptions(draft.to)),
+            h('select', { 'aria-label': 'Art', onchange: (e) => { draft.art = e.target.value; } }, options(SL.FLUSSARTEN, draft.art)),
+            h('select', { 'aria-label': 'Häufigkeit', onchange: (e) => { draft.haeufigkeit = e.target.value; } }, options(SL.HAEUFIGKEITEN, draft.haeufigkeit)),
+            h('button', { onclick: act(() => SL.addFlow(state, draft)) }, 'Fluss anlegen')) : null),
+      ];
+    }
+
+    // --- Prozesse (software-landkarte.r.prozesse, software-landkarte.d.darstellung)
+
+    function prozesse() {
+      const f = fw();
+      const none = SL.unassigned(state, f);
+      return [
+        h('section', { class: 'panel', id: 'ohne-prozess' },
+          h('h2', {}, `Ohne Prozess (${none.length})`),
+          h('p', { class: 'hint' }, 'Was in keinen Prozess passt, bleibt hier sichtbar: Kandidat für ein neues Branchenmodul.'),
+          none.map((t) => {
+            const sug = SL.suggestProcess(t.schrittRef, f);
+            return h('div', { class: 'row card', 'data-unassigned': t.id },
+              h('span', { class: 'grow' }, t.name, h('span', { class: 'hint' }, ` (${SL.sysById(state, t.systemId).name})`)),
+              sug ? h('button', { onclick: act(() => SL.assignTask(state, t.id, sug.prozess, sug.schritt)) }, `Vorschlag: ${f.prozess(sug.prozess).name}`) : null,
+              processSelect(t, f, `un-${t.id}`));
+          })),
+        f.prozesse.map((p) => {
+          const seq = SL.sequence(state, f, p.id);
+          return h('section', { class: 'panel', 'data-process': p.id },
+            h('h2', {}, p.name, p.modul ? h('span', { class: 'badge' }, `Modul ${p.modul}`) : null),
+            h('p', { class: 'hint' }, 'Schritte: ', p.schritte.map((s) => s.name).join(' → ')),
+            h('div', { class: 'report scroll', html: SL.report.swimlane(state, f, p.id) }),
+            seq.length ? h('details', { class: 'no-print' }, h('summary', {}, 'Reihenfolge und Zuordnung ändern'),
+              h('ol', { class: 'seq' }, seq.map((t, i) => h('li', { 'data-seq': t.id }, h('div', { class: 'row' },
+                h('button', { 'aria-label': 'nach oben', disabled: i === 0, onclick: act(() => SL.moveInSequence(state, f, p.id, t.id, -1)) }, '↑'),
+                h('button', { 'aria-label': 'nach unten', disabled: i === seq.length - 1, onclick: act(() => SL.moveInSequence(state, f, p.id, t.id, 1)) }, '↓'),
+                h('span', { class: 'grow' }, t.name, h('span', { class: 'hint' }, ` (${SL.sysById(state, t.systemId).name})`)),
+                processSelect(t, f, `seq-${t.id}`)))))) : null);
+        }),
+      ];
+    }
+
+    // --- Zielbild (software-landkarte.r.zielbild)
+
+    function zielbild() {
+      const ziel = SL.zielsysteme(state);
+      const ist = SL.istSystems(state);
+      const free = { name: '' };
+      const tasks = state.tasks.filter((t) => !(SL.sysById(state, t.systemId) || {}).zielsystem);
+      const targetOf = (t) => (t.ziel === 'wandert' ? (ziel[0] || {}).name : t.ziel === 'entfaellt' ? '–' : t.ziel === 'bleibt' ? SL.sysById(state, t.systemId).name : '?');
+      return [
+        h('section', { class: 'panel' },
+          h('h2', {}, 'Neue Software'),
+          h('p', { class: 'hint' }, 'Das Werkzeug entscheidet nichts, es macht die Entscheidung vollständig: je Aufgabe wandert, bleibt, entfällt oder unklar, je Datenobjekt das künftig führende System.'),
+          h('div', { class: 'row' }, catalogSelect('cat-ziel'),
+            h('button', { id: 'add-ziel-cat', onclick: act(() => {
+              const v = document.getElementById('cat-ziel').value;
+              if (!v) throw new Error('Bitte erst eine Software wählen.');
+              const sw = cat().software.find((x) => x.id === v);
+              const s = SL.addSystem(state, { name: sw.name, art: sw.art, zweck: sw.zweck, catalogId: sw.id });
+              SL.setZielsystem(state, s.id, true);
+            }) }, 'Als Zielsystem anlegen')),
+          h('div', { class: 'row' },
+            h('input', { type: 'text', id: 'ziel-name', class: 'grow', placeholder: 'oder Name der neuen Software', oninput: (e) => { free.name = e.target.value; } }),
+            h('button', { id: 'add-ziel', onclick: act(() => { const s = SL.addSystem(state, { name: free.name, art: 'cloud' }); SL.setZielsystem(state, s.id, true); }) }, 'Als Zielsystem anlegen')),
+          h('div', { class: 'checks' }, state.systems.map((s) => h('label', {},
+            h('input', { type: 'checkbox', 'data-ziel-system': s.id, checked: !!s.zielsystem, onchange: act((e) => SL.setZielsystem(state, s.id, e.target.checked)) }), ' ', s.name, ' ist Zielsystem')))),
+        ziel.length ? [
+          h('section', { class: 'panel' },
+            h('h2', {}, 'Aufgaben: Ist und Ziel'),
+            h('div', { class: 'scroll' }, h('table', { class: 'grid', id: 'ziel-aufgaben' },
+              h('thead', {}, h('tr', {}, ['Aufgabe', 'Ist: System', 'Entscheidung', 'Ziel: System'].map((x) => h('th', {}, x)))),
+              h('tbody', {}, tasks.map((t) => h('tr', { 'data-ziel-task': t.id },
+                h('td', {}, t.name), h('td', {}, SL.sysById(state, t.systemId).name),
+                h('td', {}, h('select', { k: `ziel-${t.id}`, onchange: act((e) => SL.setTaskZiel(state, t.id, e.target.value)) }, options(SL.ZIELE, t.ziel || '', '– offen –'))),
+                h('td', { class: t.ziel === 'wandert' ? 'lead' : '' }, targetOf(t)))))))),
+          h('section', { class: 'panel' },
+            h('h2', {}, 'Datenobjekte: heute und künftig führend'),
+            h('div', { class: 'scroll' }, h('table', { class: 'grid', id: 'ziel-objekte' },
+              h('thead', {}, h('tr', {}, ['Datenobjekt', 'Ist: führend', 'Ziel: führend'].map((x) => h('th', {}, x)))),
+              h('tbody', {}, state.objects.map((o) => h('tr', { 'data-ziel-object': o.id },
+                h('td', {}, o.name),
+                h('td', {}, SL.leaders(state, o.id).map((id) => SL.sysById(state, id).name).join(', ') || h('span', { class: 'badge warn' }, 'keines')),
+                h('td', {}, h('select', { k: `zf-${o.id}`, onchange: act((e) => SL.setZielFuehrend(state, o.id, e.target.value)) },
+                  h('option', { value: '' }, '– offen –'),
+                  [...ziel, ...ist].map((s) => h('option', { value: s.id, selected: o.zielFuehrend === s.id }, s.name + (s.zielsystem ? ' (neu)' : ''))))))))))),
+          h('section', { class: 'panel' },
+            h('div', { class: 'report', id: 'umstellung', html: SL.report.umstellung(state) }),
+            h('div', { class: 'row no-print' }, h('button', { id: 'adopt', onclick: act(() => {
+              const u = SL.umstellungsliste(state);
+              const msg = (u.vollstaendig ? '' : 'Es sind noch Fragen offen. ') + 'Nach der Umstellung das Zielbild als neue Ist-Landkarte übernehmen? Speichern Sie vorher die jetzige Landkarte, wenn Sie sie aufheben wollen.';
+              if (confirm(msg)) { state = SL.adoptTarget(state); toast('Neue Fassung angelegt.'); }
+            }) }, 'Zielbild als neue Ist-Landkarte übernehmen'))),
+        ] : h('section', { class: 'panel' }, h('p', { class: 'hint' }, 'Noch kein Zielsystem: Legen Sie die neue Software oben an oder markieren Sie ein System.')),
+      ];
+    }
+
+    // --- Durchgang (software-landkarte.r.mandanten-durchgang)
+
+    function durchgang() {
+      const d = SL.durchgangBefunde(state);
+      const n = SL.istSystems(state).length + state.tasks.filter((t) => !(SL.sysById(state, t.systemId) || {}).zielsystem).length;
+      const done = (item) => act(() => { item.durchgang.erledigt = true; });
+      return [
+        h('section', { class: 'panel' },
+          h('h2', {}, '1. Mandanten-Datei erzeugen'),
+          h('p', { class: 'hint' }, `Die Datei zeigt nur die Karten: ${n} Karten zu Systemen und Aufgaben und eine Frage nach weiteren Programmen. Sie läuft offline im Browser des Mandanten.`),
+          h('button', { class: 'primary', id: 'make-client', disabled: !state.systems.length, onclick: act(() => {
+            const payload = SL.clientPayload(state);
+            const html = PRISTINE.replace(EMBED_TAG, `<script id="sl-embed" type="application/json">${SL.scriptJson({ mode: 'mandant', payload })}${END}`);
+            download(`${fileBase()}.mandant.html`, html, 'text/html');
+          }) }, 'Mandanten-Datei erzeugen'),
+          state.durchgang ? h('p', { class: 'hint' }, `Zuletzt erzeugt: ${state.durchgang.erzeugt || '–'}${state.durchgang.eingelesen ? ` · Ergebnis eingelesen: ${state.durchgang.eingelesen}` : ''}`) : null),
+        h('section', { class: 'panel' },
+          h('h2', {}, '2. Ergebnis des Mandanten einlesen'),
+          h('button', { id: 'import-result', onclick: () => pickFile('.json,application/json', (text) => {
+            let data;
+            try { data = JSON.parse(text); } catch (e) { throw new Error('Die Datei ist kein gültiges JSON.'); }
+            const r = SL.importResult(state, data);
+            commit();
+            toast(`${r.uebernommen} Antworten und ${r.ergaenzungen} Ergänzungen übernommen.${r.warnings.length ? ' ' + r.warnings.join(' ') : ''}`);
+          }) }, 'Ergebnis einlesen …')),
+        h('section', { class: 'panel', id: 'durchgang-befunde' },
+          h('h2', {}, 'Was der Mandant anders sieht'),
+          h('h3', {}, `Anders (${d.anders.length})`),
+          d.anders.map((x) => h('div', { class: 'card flag-anders', 'data-anders': x.item.id }, h('div', { class: 'row' },
+            h('span', { class: 'grow' }, h('b', {}, x.label), `: ${x.item.durchgang.text || '(ohne Text)'}`),
+            h('button', { onclick: done(x.item) }, 'Erledigt')))),
+          h('h3', {}, `Unsicher (${d.unsicher.length})`),
+          d.unsicher.map((x) => h('div', { class: 'card flag-unsicher', 'data-unsicher': x.item.id }, h('div', { class: 'row' },
+            h('span', { class: 'grow' }, x.label), h('button', { onclick: done(x.item) }, 'Geklärt')))),
+          h('h3', {}, `Ergänzungen (${d.ergaenzungen.length})`),
+          d.ergaenzungen.map((e) => h('div', { class: 'card', 'data-ergaenzung': e.id }, h('div', { class: 'row' },
+            h('span', { class: 'grow' }, e.text),
+            h('button', { onclick: act(() => { SL.addSystem(state, { name: e.text, art: 'lokal', zweck: 'vom Mandanten ergänzt' }); e.erledigt = true; }) }, 'Als System anlegen'),
+            h('button', { onclick: act(() => { e.erledigt = true; }) }, 'Erledigt'))))),
+      ];
+    }
+
+    // --- Bericht (software-landkarte.r.bericht, software-landkarte.d.ergebnisformat)
+
+    function bericht() {
+      const f = fw();
+      const bom = '﻿';
+      return [
+        h('section', { class: 'panel no-print' },
+          h('h2', {}, 'Bericht und Export'),
+          h('div', { class: 'row' },
+            h('button', { class: 'primary', id: 'print', onclick: () => window.print() }, 'Drucken'),
+            h('button', { id: 'dl-report', onclick: () => download(`${fileBase()}.bericht.html`, SL.report.reportDocument(state, f), 'text/html') }, 'Bericht als HTML'),
+            h('button', { id: 'dl-matrix', onclick: () => download(`${fileBase()}-matrix.csv`, bom + SL.matrixCsv(state), 'text/csv') }, 'Matrix als CSV'),
+            h('button', { id: 'dl-tasks', onclick: () => download(`${fileBase()}-aufgaben.csv`, bom + SL.aufgabenCsv(state, f), 'text/csv') }, 'Aufgaben als CSV'),
+            h('button', { onclick: () => download(`${fileBase()}.landkarte.json`, SL.toFile(state), 'application/json') }, 'Landkarte speichern (JSON)'))),
+        h('section', { class: 'panel', id: 'report-preview', html: SL.report.render(state, f) }),
+      ];
+    }
+
+    render();
+  }
+
+  // ------------------------------------------------------------ client mode
+
+  function walkthrough(payload) {
+    const KEY = `software-landkarte:durchgang:${payload.fileId}`;
+    const list = SL.cards(payload);
+    let saved = {};
+    try { saved = JSON.parse(storage.get(KEY) || '{}'); } catch (e) { saved = {}; }
+    const st = { answers: saved.answers || {}, ergaenzungen: saved.ergaenzungen || [], index: Math.min(saved.index || 0, list.length - 1), editing: false };
+    const save = () => storage.set(KEY, JSON.stringify({ answers: st.answers, ergaenzungen: st.ergaenzungen, index: st.index }));
+    document.title = 'Ihre Software-Landkarte';
+
+    function go(i) { st.index = Math.max(0, Math.min(list.length - 1, i)); st.editing = false; save(); render(); }
+    function choose(wert) {
+      const c = list[st.index];
+      if (c.kind === 'ergaenzungen') return;
+      if (wert === 'anders') {
+        const prev = st.answers[c.key];
+        SL.answer(st.answers, c.key, 'anders', prev && prev.wert === 'anders' ? prev.text : '');
+        st.editing = true; save(); render();
+        const ta = document.getElementById('anders-text');
+        if (ta) ta.focus();
+        return;
+      }
+      SL.answer(st.answers, c.key, wert);
+      save();
+      go(st.index + 1);
+    }
+
+    function render() {
+      const c = list[st.index];
+      const p = SL.progress(payload, st.answers);
+      const a = st.answers[c.key];
+      let body;
+      if (c.kind === 'ergaenzungen') {
+        let draft = '';
+        const add = () => { if (draft.trim()) { st.ergaenzungen.push(draft.trim()); save(); render(); const i = document.getElementById('erg-input'); if (i) i.focus(); } };
+        const firstOpen = list.findIndex((x) => x.kind !== 'ergaenzungen' && !st.answers[x.key]);
+        body = [
+          h('div', { class: 'kicker' }, 'Zum Schluss'),
+          h('div', { class: 'title' }, 'Welche Programme, Listen oder Ordner nutzen Sie noch?'),
+          h('p', { class: 'intro' }, 'Alles, was oben nicht vorkam: auch Excel-Listen, Papierordner, Notizbücher oder Postfächer.'),
+          h('ul', { id: 'erg-list' }, st.ergaenzungen.map((e, i) => h('li', {}, e, ' ', h('button', { class: 'link', 'aria-label': `${e} entfernen`, onclick: () => { st.ergaenzungen.splice(i, 1); save(); render(); } }, 'entfernen')))),
+          h('div', { class: 'row' },
+            h('input', { type: 'text', id: 'erg-input', class: 'grow', placeholder: 'z. B. Excel-Liste mit Preisen', oninput: (e) => { draft = e.target.value; }, onkeydown: (e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } } }),
+            h('button', { id: 'erg-add', onclick: add }, 'Hinzufügen')),
+          h('hr', {}),
+          firstOpen >= 0 ? h('p', {}, `Noch ${p.total - p.done} Karten ohne Antwort. `, h('button', { class: 'link', id: 'goto-open', onclick: () => go(firstOpen) }, 'Zur ersten offenen Karte')) : h('p', {}, 'Alle Karten sind beantwortet. Danke!'),
+          h('button', { class: 'primary', id: 'save-result', onclick: () => {
+            const result = SL.clientResult(payload, st.answers, st.ergaenzungen);
+            download(`durchgang-${SL.today()}.durchgang.json`, JSON.stringify(result, null, 2), 'application/json');
+            toast('Ergebnis gespeichert. Bitte schicken Sie die Datei an Ihre Kanzlei.');
+          } }, 'Ergebnis speichern'),
+          h('p', { class: 'intro' }, 'Es entsteht eine Datei, die Sie Ihrer Kanzlei schicken. Nichts wird automatisch übertragen.'),
+        ];
+      } else {
+        const s = c.system;
+        body = [
+          c.kind === 'system'
+            ? [h('div', { class: 'kicker' }, `Programm oder Ablage · ${SL.ARTEN[s.art]}`),
+              h('div', { class: 'title' }, s.name),
+              s.zweck ? h('p', {}, h('b', {}, 'Wofür: '), s.zweck) : null,
+              s.rollen.length ? h('p', {}, h('b', {}, 'Wer arbeitet damit: '), s.rollen.join(', ')) : null,
+              h('p', { class: 'intro' }, 'Nutzen Sie das so?')]
+            : [h('div', { class: 'kicker' }, `Aufgabe in ${s.name}`),
+              h('div', { class: 'title' }, c.task.name),
+              h('p', {}, h('b', {}, 'Wer: '), c.task.rolle || '–', ' · ', h('b', {}, 'Wie oft: '), SL.HAEUFIGKEITEN[c.task.haeufigkeit]),
+              h('p', { class: 'intro' }, `Erledigen Sie das so in ${s.name}?`)],
+          h('div', { class: 'answers', role: 'group', 'aria-label': 'Antwort' },
+            h('button', { 'data-answer': 'ok', 'aria-pressed': String(!!a && a.wert === 'ok'), onclick: () => choose('ok') }, '✓ So ist es'),
+            h('button', { 'data-answer': 'anders', 'aria-pressed': String(!!a && a.wert === 'anders'), onclick: () => choose('anders') }, '✗ Anders'),
+            h('button', { 'data-answer': 'unsicher', 'aria-pressed': String(!!a && a.wert === 'unsicher'), onclick: () => choose('unsicher') }, '? Unsicher')),
+          a && a.wert === 'anders' ? h('div', {},
+            h('label', { for: 'anders-text' }, 'Was ist anders? (kurz)'),
+            h('textarea', { id: 'anders-text', value: a.text || '', oninput: (e) => { SL.answer(st.answers, c.key, 'anders', e.target.value); save(); },
+              onkeydown: (e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); go(st.index + 1); } } })) : null,
+          a ? h('p', {}, h('button', { class: 'link', id: 'retract', onclick: () => { SL.answer(st.answers, c.key, null); save(); render(); } }, 'Antwort zurücknehmen')) : null,
+        ];
+      }
+      app.replaceChildren(h('div', { class: 'walk' },
+        h('h1', {}, 'Ihre Software-Landkarte'),
+        h('p', { class: 'intro' }, payload.betrieb ? `${payload.betrieb}: ` : '', 'Ihre Kanzlei hat eingetragen, was sie über Ihre Programme und Abläufe weiß. Bestätigen Sie jede Karte oder sagen Sie, was anders ist. Ihr Stand bleibt in diesem Browser gespeichert; Sie können jederzeit unterbrechen.'),
+        h('div', { class: 'progress', role: 'progressbar', 'aria-label': 'Fortschritt', 'aria-valuemin': 0, 'aria-valuemax': p.total, 'aria-valuenow': p.done },
+          h('div', { style: `width:${p.percent}%` })),
+        h('div', { class: 'keys', id: 'progress-text' }, `${p.done} von ${p.total} beantwortet · Karte ${st.index + 1} von ${list.length}`),
+        h('div', { class: 'bigcard', 'data-card': c.key }, body),
+        h('div', { class: 'nav' },
+          h('button', { id: 'prev', disabled: st.index === 0, onclick: () => go(st.index - 1) }, '← Zurück'),
+          h('span', { class: 'keys' }, 'Tasten: 1 = so ist es, 2 = anders, 3 = unsicher, Pfeile = blättern'),
+          h('button', { id: 'next', disabled: st.index === list.length - 1, onclick: () => go(st.index + 1) }, 'Weiter →'))));
+    }
+
+    document.addEventListener('keydown', (e) => {
+      const tag = (e.target.tagName || '').toLowerCase();
+      if (tag === 'textarea' || tag === 'input' || e.altKey || e.ctrlKey || e.metaKey) return;
+      const map = { 1: 'ok', j: 'ok', 2: 'anders', a: 'anders', 3: 'unsicher', u: 'unsicher' };
+      if (map[e.key.toLowerCase()]) { e.preventDefault(); choose(map[e.key.toLowerCase()]); }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); go(st.index + 1); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); go(st.index - 1); }
+    });
+    render();
+  }
+})();
+</script>
+</body>
+</html>

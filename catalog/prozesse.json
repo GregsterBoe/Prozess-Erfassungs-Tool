@@ -1,0 +1,51 @@
+{
+  "prozesse": [
+    {
+      "id": "p2p",
+      "name": "Einkauf bis Zahlung",
+      "schritte": [
+        { "id": "bedarf", "name": "Bedarf feststellen" },
+        { "id": "bestellen", "name": "Bestellen" },
+        { "id": "wareneingang", "name": "Ware oder Leistung annehmen" },
+        { "id": "eingangsrechnung", "name": "Eingangsrechnung prüfen und freigeben" },
+        { "id": "zahlung", "name": "Lieferanten bezahlen" },
+        { "id": "buchen", "name": "Eingangsrechnung buchen" }
+      ]
+    },
+    {
+      "id": "o2c",
+      "name": "Auftrag bis Zahlungseingang",
+      "schritte": [
+        { "id": "angebot", "name": "Anfrage und Angebot" },
+        { "id": "auftrag", "name": "Auftrag annehmen" },
+        { "id": "leistung", "name": "Liefern oder Leistung erbringen" },
+        { "id": "rechnung", "name": "Ausgangsrechnung schreiben" },
+        { "id": "zahlungseingang", "name": "Zahlungseingang überwachen" },
+        { "id": "mahnung", "name": "Mahnen" },
+        { "id": "buchen", "name": "Ausgangsrechnung buchen" }
+      ]
+    },
+    {
+      "id": "h2r",
+      "name": "Personal und Lohn",
+      "schritte": [
+        { "id": "stammdaten", "name": "Mitarbeiterdaten pflegen" },
+        { "id": "zeiten", "name": "Arbeitszeiten erfassen" },
+        { "id": "abwesenheit", "name": "Urlaub und Krankheit erfassen" },
+        { "id": "lohn", "name": "Lohn abrechnen" },
+        { "id": "auszahlung", "name": "Löhne auszahlen" }
+      ]
+    },
+    {
+      "id": "r2r",
+      "name": "Buchhaltung und Abschluss",
+      "schritte": [
+        { "id": "belege", "name": "Belege sammeln und übermitteln" },
+        { "id": "bank", "name": "Bankumsätze abstimmen" },
+        { "id": "kasse", "name": "Kasse führen" },
+        { "id": "ust", "name": "Umsatzsteuer-Voranmeldung" },
+        { "id": "abschluss", "name": "Jahresabschluss vorbereiten" }
+      ]
+    }
+  ]
+}

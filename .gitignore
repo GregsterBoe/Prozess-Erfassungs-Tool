@@ -1,0 +1,13 @@
+# Client data never goes into this repository (software-landkarte.r.keine-mandantendaten).
+# Everything the tool writes for a real client ends in one of these patterns.
+*.landkarte.json
+*.durchgang.json
+*.mandant.html
+*.bericht.html
+*.csv
+mandanten/
+ergebnisse/
+
+node_modules/
+test-results/
+.DS_Store

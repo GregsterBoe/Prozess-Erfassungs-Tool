@@ -1,0 +1,76 @@
+{
+  "id": "handwerk",
+  "name": "Handwerk",
+  "beschreibung": "Termin- und Einsatzplanung, Material und Aufmaß",
+  "prozesse": [
+    {
+      "id": "einsatz",
+      "name": "Termin- und Einsatzplanung",
+      "schritte": [
+        { "id": "termin", "name": "Termin vereinbaren" },
+        { "id": "planen", "name": "Monteure einplanen" },
+        { "id": "durchfuehren", "name": "Einsatz durchführen" },
+        { "id": "rapport", "name": "Arbeitsbericht erfassen" }
+      ]
+    }
+  ],
+  "einhaengen": [
+    { "prozess": "o2c", "nach": "auftrag", "schritte": [{ "id": "material", "name": "Material entnehmen" }] },
+    { "prozess": "o2c", "nach": "leistung", "schritte": [{ "id": "aufmass", "name": "Aufmaß und Abnahme" }] }
+  ],
+  "datenobjekte": [
+    { "id": "einsatzplan", "name": "Einsatzplan", "art": "bewegung" },
+    { "id": "arbeitsberichte", "name": "Arbeitsberichte", "art": "bewegung" }
+  ],
+  "software": [
+    {
+      "id": "topkontor-handwerk",
+      "name": "TopKontor Handwerk",
+      "kategorie": "Handwerkersoftware",
+      "art": "lokal",
+      "zweck": "Angebote, Aufträge, Material und Rechnungen eines Handwerksbetriebs",
+      "aufgaben": [
+        { "id": "angebot", "name": "Angebote schreiben", "rolle": "Büro", "haeufigkeit": "woechentlich", "liest": ["kunden", "artikel"], "schreibt": ["angebote"], "schritt": "o2c:angebot" },
+        { "id": "auftrag", "name": "Aufträge anlegen", "rolle": "Büro", "haeufigkeit": "woechentlich", "liest": ["kunden", "angebote"], "schreibt": ["auftraege"], "schritt": "o2c:auftrag" },
+        { "id": "material", "name": "Material zum Auftrag buchen", "rolle": "Lager", "haeufigkeit": "taeglich", "liest": ["auftraege", "artikel"], "schreibt": ["auftraege"], "schritt": "o2c:material" },
+        { "id": "rechnung", "name": "Ausgangsrechnungen schreiben", "rolle": "Büro", "haeufigkeit": "woechentlich", "liest": ["auftraege", "kunden", "arbeitsberichte"], "schreibt": ["ausgangsrechnungen"], "schritt": "o2c:rechnung" },
+        { "id": "kunden", "name": "Kunden anlegen und pflegen", "rolle": "Büro", "haeufigkeit": "bedarf", "liest": [], "schreibt": ["kunden"], "schritt": "o2c:auftrag" },
+        { "id": "export", "name": "Rechnungen an die Buchhaltung exportieren", "rolle": "Büro", "haeufigkeit": "monatlich", "liest": ["ausgangsrechnungen"], "schreibt": [], "schritt": "o2c:buchen" }
+      ]
+    },
+    {
+      "id": "hero",
+      "name": "HERO Software",
+      "kategorie": "Handwerkersoftware",
+      "art": "cloud",
+      "zweck": "Projekte, Termine, Dokumentation und Rechnungen für Handwerker",
+      "aufgaben": [
+        { "id": "termin", "name": "Termine mit Kunden vereinbaren", "rolle": "Büro", "haeufigkeit": "taeglich", "liest": ["kunden"], "schreibt": ["einsatzplan"], "schritt": "einsatz:termin" },
+        { "id": "planen", "name": "Monteure einplanen", "rolle": "Büro", "haeufigkeit": "taeglich", "liest": ["mitarbeiter", "auftraege"], "schreibt": ["einsatzplan"], "schritt": "einsatz:planen" },
+        { "id": "doku", "name": "Baustelle dokumentieren", "rolle": "Monteure", "haeufigkeit": "taeglich", "liest": ["einsatzplan"], "schreibt": ["arbeitsberichte"], "schritt": "einsatz:rapport" },
+        { "id": "rechnung", "name": "Ausgangsrechnungen schreiben", "rolle": "Büro", "haeufigkeit": "woechentlich", "liest": ["auftraege", "arbeitsberichte"], "schreibt": ["ausgangsrechnungen"], "schritt": "o2c:rechnung" }
+      ]
+    },
+    {
+      "id": "craftnote",
+      "name": "Craftnote",
+      "kategorie": "Baustellen-App",
+      "art": "cloud",
+      "zweck": "Baustellenkommunikation, Fotos und Arbeitszeiten der Monteure",
+      "aufgaben": [
+        { "id": "doku", "name": "Fotos und Notizen zur Baustelle erfassen", "rolle": "Monteure", "haeufigkeit": "taeglich", "liest": ["einsatzplan"], "schreibt": ["arbeitsberichte"], "schritt": "einsatz:rapport" },
+        { "id": "zeiten", "name": "Arbeitszeiten auf der Baustelle erfassen", "rolle": "Monteure", "haeufigkeit": "taeglich", "liest": [], "schreibt": ["arbeitszeiten"], "schritt": "h2r:zeiten" }
+      ]
+    },
+    {
+      "id": "papier-arbeitsberichte",
+      "name": "Arbeitsberichte auf Papier",
+      "kategorie": "Papier",
+      "art": "papier",
+      "zweck": "Handschriftliche Stunden- und Materialzettel der Monteure",
+      "aufgaben": [
+        { "id": "rapport", "name": "Stunden und Material auf dem Zettel notieren", "rolle": "Monteure", "haeufigkeit": "taeglich", "liest": ["einsatzplan"], "schreibt": ["arbeitsberichte", "arbeitszeiten"], "schritt": "einsatz:rapport" }
+      ]
+    }
+  ]
+}
