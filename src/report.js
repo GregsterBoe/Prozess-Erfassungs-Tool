@@ -13,39 +13,64 @@
   const CODES = { fuehrt: 'F', liest: 'L', kopie: 'K' };
   const SWIM_COLUMNS = 5;
 
+  // Colours and typefaces are the roles of the style in src/stil.css; the sizes are in pt
+  // because the report is made for A4.
   const REPORT_CSS = `
-.report { font: 10.5pt/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #1d232a; }
-.report h1 { font-size: 18pt; margin: 0 0 .2em; }
-.report h2 { font-size: 13pt; margin: 1.4em 0 .4em; border-bottom: 1px solid #c9d1d9; padding-bottom: .15em; break-after: avoid; }
-.report h3 { font-size: 11pt; margin: 1em 0 .3em; break-after: avoid; }
-.report .meta { color: #57606a; margin: 0 0 1em; }
-.report table { width: 100%; max-width: 100%; border-collapse: collapse; table-layout: fixed; margin: .3em 0 .8em; break-inside: auto; }
-.report th, .report td { border: 1px solid #c9d1d9; padding: 3px 5px; vertical-align: top; text-align: left; overflow-wrap: anywhere; word-break: break-word; hyphens: auto; }
-.report th { background: #f0f3f6; font-weight: 600; }
+.report { font: 10.5pt/1.4 var(--f-body); color: var(--ink); }
+.report h1 { font: 800 18pt/1.1 var(--f-display); letter-spacing: -0.02em; margin: 0 0 .2em; }
+.report h2 { font: 800 13pt/1.2 var(--f-display); margin: 1.6em 0 .4em; border-top: 1px solid var(--ink); padding-top: .35em; break-after: avoid; }
+.report h3 { font: 700 10.5pt/1.2 var(--f-display); margin: 1.1em 0 .3em; break-after: avoid; }
+.report .meta { color: var(--muted); margin: 0 0 1em; }
+.report table { width: 100%; max-width: 100%; border-collapse: collapse; table-layout: fixed; margin: .3em 0 .8em; break-inside: auto; font: inherit; }
+.report th, .report td { border: 0; border-bottom: 1px solid var(--rule); padding: 3px 5px; vertical-align: top; text-align: left; overflow-wrap: anywhere; word-break: break-word; hyphens: auto; }
+.report th { font: 600 8pt/1.3 var(--f-ui); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); border-bottom: 2px solid var(--ink); vertical-align: bottom; }
 .report tr { break-inside: avoid; }
-.report .num { text-align: right; white-space: nowrap; }
-.report .c { text-align: center; }
-.report .tiles { display: flex; flex-wrap: wrap; gap: 8px; margin: .5em 0 1em; }
-.report .tile { border: 1px solid #c9d1d9; border-radius: 6px; padding: 6px 10px; min-width: 110px; }
-.report .tile b { display: block; font-size: 16pt; }
-.report .warn { color: #9a3412; }
-.report .bad { background: #fde8e8; }
-.report .lead { background: #e6f4ea; font-weight: 700; }
-.report .muted { color: #57606a; }
-.report .box { border: 1px solid #8c959f; border-radius: 4px; padding: 3px 5px; background: #fff; }
-.report .box.mb { border: 2px solid #b42318; background: #fff4f2; }
-.report .lane { font-weight: 600; background: #f6f8fa; }
+.report .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.report td.num, .report .key { font-family: var(--f-mono); }
+.report td.num { font-size: 9.5pt; }
+.report tfoot th { font: 700 10.5pt/1.4 var(--f-body); letter-spacing: 0; text-transform: none; color: var(--ink); border-top: 1px solid var(--ink); border-bottom: 0; }
+.report tfoot th.num { font-family: var(--f-mono); border-bottom: 3px double var(--ink); }
+.report .befunde { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 0 20px; align-items: start; border-top: 1px solid var(--ink); border-bottom: 1px solid var(--rule); padding: .6em 0 .2em; margin: 0 0 1em; break-inside: avoid; }
+.report .key { display: block; font-size: 30pt; font-weight: 700; line-height: 1; letter-spacing: -0.04em; }
+.report .key + span { display: block; margin-top: .3em; color: var(--muted); }
+.report .befunde table { margin: 0 0 .4em; }
+.report .befunde tr:last-child td { border-bottom: 0; }
+.report .zeichen { width: 1.8em; font-weight: 700; }
+.report .ok { color: var(--ok); }
+.report .warn { color: var(--warn); }
+.report .schlecht { color: var(--bad); }
+.report .bad { background: var(--bad-bg); color: var(--bad); font-weight: 700; }
+.report .lead { background: var(--ok-bg); color: var(--ok); font-weight: 700; }
+.report .muted { color: var(--muted); }
+.report .swimlane th { letter-spacing: 0; text-transform: none; }
+.report .box { border: 1px solid var(--muted); border-radius: var(--r); padding: 3px 5px; background: var(--sheet); }
+.report .box + .box { margin-top: 3px; }
+.report .box.mb { border: 2px solid var(--bad); background: var(--bad-bg); }
+.report .lane { font-weight: 700; }
 .report ul { margin: .2em 0 .8em; padding-left: 1.3em; }
-.report .legend { font-size: 9pt; color: #57606a; }
-@media print { .report h2 { break-before: auto; } .report .tile { break-inside: avoid; } }
+.report .legend { font-size: 9pt; color: var(--muted); }
+@media (max-width: 520px) { .report .befunde { grid-template-columns: minmax(0, 1fr); } }
+@media print { .report h2 { break-before: auto; } }
 `;
 
   function names(state, ids) { return ids.map((id) => (SL.sysById(state, id) || {}).name || '?').join(', '); }
   const objName = (state, id) => (SL.objById(state, id) || {}).name || id;
   const sysName = (state, id) => (SL.sysById(state, id) || {}).name || '?';
 
-  function tile(n, label, bad) {
-    return `<div class="tile${bad && n ? ' warn' : ''}"><b>${esc(n)}</b>${esc(label)}</div>`;
+  // Summary first: the one figure, then each finding with its sign and count.
+  function befundZeile(n, label, sign, cls) {
+    return `<tr><td class="zeichen ${n ? cls : 'ok'}">${n ? sign : '✓'}</td><td>${esc(label)}</td><td class="num">${esc(n)}</td></tr>`;
+  }
+
+  function zusammenfassung(b) {
+    const key = b.aufwandSumme
+      ? `<b class="key">${esc(b.aufwandSumme)}</b><span>Minuten im Monat für Medienbrüche</span>`
+      : `<b class="key">${esc(b.medienbrueche.length)}</b><span>Medienbrüche</span>`;
+    return `<div class="befunde"><div>${key}</div><table><colgroup><col style="width:2.2em"><col><col style="width:4em"></colgroup><tbody>${
+      befundZeile(b.medienbrueche.length, 'Medienbrüche', '✗', 'schlecht')}${
+      befundZeile(b.doppelt.length, 'Datenobjekte mit doppelter Pflege', '✗', 'schlecht')}${
+      befundZeile(b.luecken.length, 'Datenobjekte ohne führendes System', '✗', 'schlecht')}${
+      befundZeile(b.offeneFragen.length, 'offene Fragen', '?', 'warn')}</tbody></table></div>`;
   }
 
   function list(items, empty) {
@@ -55,13 +80,13 @@
   function matrixTable(state) {
     const sys = SL.istSystems(state);
     if (!state.objects.length || !sys.length) return '<p class="muted">Noch keine Datenobjekte oder Systeme.</p>';
-    const head = sys.map((s, i) => `<th class="c" title="${esc(s.name)}">${i + 1}</th>`).join('');
+    const head = sys.map((s, i) => `<th title="${esc(s.name)}">${i + 1}</th>`).join('');
     const rows = state.objects.map((o) => {
       const st = SL.objectStatus(state, o.id);
       const flag = st === 'doppelt' ? ' <span class="warn">⚠ doppelte Pflege</span>' : st === 'luecke' ? ' <span class="warn">⚠ kein führendes System</span>' : '';
       const cells = sys.map((s) => {
         const v = SL.cell(state, o.id, s.id);
-        const cls = v === 'fuehrt' ? (st === 'doppelt' ? 'c bad' : 'c lead') : 'c';
+        const cls = v === 'fuehrt' ? (st === 'doppelt' ? 'bad' : 'lead') : '';
         return `<td class="${cls}">${CODES[v] || ''}</td>`;
       }).join('');
       return `<tr><td>${esc(o.name)}${flag}</td>${cells}</tr>`;
@@ -131,7 +156,7 @@ ${list([
     const hasZiel = SL.zielsysteme(state).length > 0;
     const mbRows = b.medienbrueche.map((f) => `<tr><td>${esc(objName(state, f.objectId))}</td><td>${esc(sysName(state, f.from))} → ${esc(sysName(state, f.to))}</td><td>${esc(SL.FLUSSARTEN[f.art])}</td><td>${esc(SL.HAEUFIGKEITEN[f.haeufigkeit] || '')}</td><td class="num">${f.aufwand ? esc(f.aufwand) : '–'}</td></tr>`).join('');
     const procs = fw.prozesse.map((p) => `<h3>${esc(p.name)}${p.modul ? ` <span class="muted">(Modul ${esc(p.modul)})</span>` : ''}</h3>${swimlaneTables(state, fw, p.id)}`).join('');
-    const sysRows = sys.map((s, i) => `<tr><td class="c">${i + 1}</td><td>${esc(s.name)}</td><td>${esc(SL.ARTEN[s.art])}</td><td>${esc(s.zweck)}</td><td>${esc(s.rollen.join(', '))}</td></tr>`).join('');
+    const sysRows = sys.map((s, i) => `<tr><td>${i + 1}</td><td>${esc(s.name)}</td><td>${esc(SL.ARTEN[s.art])}</td><td>${esc(s.zweck)}</td><td>${esc(s.rollen.join(', '))}</td></tr>`).join('');
     const taskRows = state.tasks.filter((t) => !(SL.sysById(state, t.systemId) || {}).zielsystem).map((t) => {
       const p = SL.inFramework(t, fw) ? fw.prozess(t.prozess) : null;
       const steps = t.schritte.length ? `<div class="muted">${t.schritte.map((s) => esc(s.name)).join(' → ')}</div>` : '';
@@ -141,7 +166,7 @@ ${list([
 <h1>Software-Landkarte${state.meta.betrieb ? `: ${esc(state.meta.betrieb)}` : ''}</h1>
 <p class="meta">Stand ${esc(state.meta.geaendert)} · Fassung ${esc(state.meta.version)}${state.meta.module.length ? ` · Module: ${esc(state.meta.module.join(', '))}` : ''}</p>
 <h2>Befunde</h2>
-<div class="tiles">${tile(b.medienbrueche.length, 'Medienbrüche', true)}${tile(b.doppelt.length, 'doppelte Pflege', true)}${tile(b.luecken.length, 'ohne führendes System', true)}${tile(b.offeneFragen.length, 'offene Fragen', true)}${b.aufwandSumme ? tile(b.aufwandSumme, 'Minuten im Monat für Medienbrüche', true) : ''}</div>
+${zusammenfassung(b)}
 <h3>Medienbrüche</h3>
 ${b.medienbrueche.length ? `<table><colgroup><col style="width:22%"><col style="width:30%"><col style="width:20%"><col style="width:14%"><col style="width:14%"></colgroup><thead><tr><th>Datenobjekt</th><th>Weg</th><th>Art</th><th>Häufigkeit</th><th class="num">Min./Monat</th></tr></thead><tbody>${mbRows}</tbody>${b.aufwandSumme ? `<tfoot><tr><th colspan="4">Summe</th><th class="num">${esc(b.aufwandSumme)}</th></tr></tfoot>` : ''}</table>` : '<p class="muted">Keine.</p>'}
 <h3>Doppelte Pflege</h3>
@@ -165,14 +190,15 @@ ${taskRows ? `<table><colgroup><col style="width:34%"><col style="width:20%"><co
 </div>`;
   }
 
-  /** A standalone file: no scripts, no network (software-landkarte.r.lokal). */
-  function reportDocument(state, fw) {
+  /** A standalone file: no scripts, no network (software-landkarte.r.lokal). `tokens` is
+   * the style's variables (the page's #sl-stil); the report is always drawn light. */
+  function reportDocument(state, fw, tokens) {
     return `<!DOCTYPE html>
-<html lang="de"><head><meta charset="utf-8">
+<html lang="de" data-theme="light"><head><meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Bericht Software-Landkarte${state.meta.betrieb ? ` – ${esc(state.meta.betrieb)}` : ''}</title>
-<style>@page { size: A4; margin: 15mm; } body { margin: 0 auto; max-width: 180mm; padding: 10mm 0; background: #fff; }${REPORT_CSS}</style>
+<style>${tokens || ''}@page { size: A4; margin: 15mm; } body { margin: 0 auto; max-width: 180mm; padding: 10mm 0; background: var(--sheet); }${REPORT_CSS}</style>
 </head><body>${render(state, fw)}</body></html>`;
   }
 

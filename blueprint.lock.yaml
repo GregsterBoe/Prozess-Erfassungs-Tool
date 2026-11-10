@@ -12,7 +12,7 @@ units:
       - "test/model.test.js::zielbild: the changeover list says what moves, which flows need an interface, what can be switched off"
   software-landkarte.d.werkzeugform:
     fp: b6f9bc9b96
-    files: [src/index.html, src/app.js, src/styles.css, scripts/build.js, dist/software-landkarte.html]
+    files: [src/index.html, src/app.js, src/styles.css, src/stil.css, scripts/build.js, dist/software-landkarte.html]
     tests:
       - "test/e2e/app.test.js::durchgang: the client file shows only the walkthrough"
       - "test/e2e/app.test.js::lokal: opens from file:// without login and makes no network request through a full session"

@@ -29,12 +29,26 @@ function validate(data) {
   ];
 }
 
+// src/stil.css is the knowledge base style as `python -m kb style ID --css` prints it:
+// the variables, then the house classes. The variables go into their own <style> so the
+// report file can carry them; print always uses the light values.
+const STIL_ENDE = '/* House style: base */';
+function stil() {
+  const css = read('src/stil.css');
+  const cut = css.indexOf(STIL_ENDE);
+  const light = /:root\s*\{([^}]*)\}/.exec(css);
+  if (cut < 0 || !light || light.index > cut) throw new Error('src/stil.css is not a style from `kb style --css`');
+  return { tokens: `${css.slice(0, cut)}@media print {\n  :root:root:root {${light[1]}}\n}\n`, base: css.slice(cut) };
+}
+
 function build() {
   const data = loadData();
   const errors = validate(data);
   if (errors.length) throw new Error('Katalog oder Module ungültig:\n  ' + errors.join('\n  '));
+  const { tokens, base } = stil();
   const parts = {
-    STYLES: read('src/styles.css'),
+    TOKENS: tokens,
+    STYLES: `${base}\n${read('src/styles.css')}`,
     DATA: SL.scriptJson(data),
     CORE: read('src/core.js'),
     REPORT: read('src/report.js'),

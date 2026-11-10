@@ -21,16 +21,20 @@
   function h(tag, props, ...kids) {
     const el = document.createElement(tag);
     let value;
+    let cls = '';
     for (const [k, v] of Object.entries(props || {})) {
       if (v == null || v === false) continue;
       if (k.startsWith('on')) el.addEventListener(k.slice(2).toLowerCase(), v);
-      else if (k === 'class') el.className = v;
+      else if (k === 'class') cls = v;
       else if (k === 'value') value = v;
       else if (k === 'checked' || k === 'disabled' || k === 'selected') el[k] = !!v;
       else if (k === 'k') el.dataset.k = v;
       else if (k === 'html') el.innerHTML = v; // only for strings built by SL.report, which escapes
       else el.setAttribute(k, v === true ? '' : v);
     }
+    // Every button is a house-style button, except tabs and buttons that read as links.
+    if (tag === 'button' && !(props && props.role) && !/\blink\b/.test(cls)) cls = `btn ${cls}`.trim();
+    if (cls) el.className = cls;
     for (const kid of kids.flat(Infinity)) {
       if (kid == null || kid === false) continue;
       el.append(kid instanceof Node ? kid : document.createTextNode(String(kid)));
@@ -44,10 +48,14 @@
     ...Object.entries(map).filter(([k]) => k !== '').map(([k, label]) => h('option', { value: k, selected: k === current }, label)),
   ];
 
-  function toast(msg) {
-    const t = h('div', { class: 'toast', role: 'status' }, msg);
+  // A labelled field: the label says what is asked, the placeholder is only an example.
+  const feld = (text, control, cls) => h('label', { class: cls == null ? 'grow' : cls }, text, control);
+  const anzahl = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+
+  function toast(msg, bad) {
+    const t = h('div', { class: bad ? 'toast bad' : 'toast', role: bad ? 'alert' : 'status' }, msg);
     document.body.append(t);
-    setTimeout(() => t.remove(), 4000);
+    setTimeout(() => t.remove(), bad ? 8000 : 4000);
   }
 
   function download(name, text, type) {
@@ -64,7 +72,7 @@
       const f = input.files[0];
       if (!f) return;
       const r = new FileReader();
-      r.onload = () => { try { onText(String(r.result)); } catch (e) { toast(e.message); } input.remove(); };
+      r.onload = () => { try { onText(String(r.result)); } catch (e) { toast(e.message, true); } input.remove(); };
       r.readAsText(f);
     });
     document.body.append(input);
@@ -103,7 +111,7 @@
       if (pending) return;
       pending = setTimeout(() => { pending = null; render(); }, 0);
     }
-    const act = (fn) => (ev) => { try { fn(ev); commit(); } catch (e) { toast(e.message); } };
+    const act = (fn) => (ev) => { try { fn(ev); commit(); } catch (e) { toast(e.message, true); } };
     const fileBase = () => `${slug(state.meta.betrieb)}-${SL.today()}`;
 
     const TABS = [
@@ -117,20 +125,82 @@
         systeme: SL.istSystems(state).length, aufgaben: state.tasks.length, daten: state.objects.length, fluesse: state.flows.length,
       };
       const view = { betrieb, systeme, aufgaben, daten, fluesse, prozesse, zielbild, durchgang, bericht }[tab]();
-      app.replaceChildren(
-        h('header', { class: 'top' },
-          h('h1', {}, 'Software-Landkarte'),
-          h('span', { class: 'sub' }, state.meta.betrieb || 'neuer Betrieb', ` · Fassung ${state.meta.version} · Stand ${state.meta.geaendert}`)),
+      app.replaceChildren(h('div', { class: 'wrap' },
+        h('header', { class: 'masthead' },
+          h('div', { class: 'label' },
+            h('span', {}, state.meta.betrieb ? 'Software-Landkarte' : 'Software-Landkarte · neuer Betrieb'),
+            h('span', {}, `Fassung ${state.meta.version} · Stand ${state.meta.geaendert}`)),
+          h('h1', {}, state.meta.betrieb || 'Software-Landkarte')),
         h('nav', { class: 'tabs', role: 'tablist' }, TABS.map(([id, label]) => h('button', {
           role: 'tab', 'aria-selected': String(tab === id), 'data-tab': id,
           onclick: () => { tab = id; render(); window.scrollTo(0, 0); },
         }, label, counts[id] != null ? h('span', { class: 'count' }, counts[id]) : null))),
-        h('main', {}, view),
-      );
+        h('main', {}, lage(), view)));
       if (focusKey) {
         const el = app.querySelector(`[data-k="${CSS.escape(focusKey)}"]`);
         if (el) el.focus();
       }
+    }
+
+    // --- Summary first: the one figure of the view and what it means (house style).
+
+    function lage() {
+      const make = (zahl, einheit, satz) => h('div', { class: 'summary grid lage no-print' },
+        h('div', {}, h('span', { class: 'key' }, zahl, ' ', h('small', {}, einheit))),
+        h('div', {}, h('p', {}, satz)));
+      const f = fw();
+      const b = SL.befunde(state, f);
+      const ist = SL.istSystems(state);
+      const tasks = state.tasks.filter((t) => !(SL.sysById(state, t.systemId) || {}).zielsystem);
+      const offen = b.doppelt.length + b.luecken.length;
+      if (tab === 'betrieb') {
+        return make(ist.length, ist.length === 1 ? 'System' : 'Systeme', ist.length
+          ? `${anzahl(tasks.length, 'Aufgabe', 'Aufgaben')}, ${anzahl(state.objects.length, 'Datenobjekt', 'Datenobjekte')} und ${anzahl(state.flows.length, 'Fluss', 'Flüsse')} erfasst. Befunde: ${anzahl(b.medienbrueche.length, 'Medienbruch', 'Medienbrüche')}, ${anzahl(offen, 'Datenobjekt', 'Datenobjekte')} ohne eindeutig führendes System.`
+          : 'Noch nichts erfasst. Benennen Sie den Betrieb, wählen Sie die Branchenmodule und legen Sie dann im Reiter Systeme das erste System an.');
+      }
+      if (tab === 'systeme') {
+        const ziel = SL.zielsysteme(state).length;
+        return make(ist.length, ist.length === 1 ? 'System' : 'Systeme', ist.length
+          ? `Im Betrieb heute im Einsatz. ${ziel ? `Dazu ${anzahl(ziel, 'Zielsystem', 'Zielsysteme')} für die Umstellung.` : 'Noch kein Zielsystem.'}`
+          : 'Noch keine Systeme. Auch Excel-Listen, Papier und Postfächer zählen: Fügen Sie das erste unten hinzu.');
+      }
+      if (tab === 'aufgaben' && ist.length) {
+        const mb = tasks.filter((t) => SL.taskBreaks(state, t).length).length;
+        return make(tasks.length, tasks.length === 1 ? 'Aufgabe' : 'Aufgaben', tasks.length
+          ? `Davon ${mb} mit Medienbruch und ${b.ohneProzess.length} ohne Prozess.`
+          : 'Noch keine Aufgaben. Wählen Sie je System die typischen Aufgaben an oder legen Sie eigene an.');
+      }
+      if (tab === 'daten') {
+        if (!state.objects.length) return make(0, 'Datenobjekte', 'Noch keine Datenobjekte. Wählen Sie unten aus dem Katalog oder legen Sie ein eigenes an.');
+        return make(offen, `von ${state.objects.length} Datenobjekten ohne eindeutig führendes System`, offen
+          ? `${b.doppelt.length} mit doppelter Pflege, ${b.luecken.length} ohne führendes System. Ziel: je Datenobjekt genau ein führendes System.`
+          : 'Jedes Datenobjekt hat genau ein führendes System.');
+      }
+      if (tab === 'fluesse') {
+        const sugg = SL.suggestFlows(state).length;
+        return make(b.medienbrueche.length, b.medienbrueche.length === 1 ? 'Medienbruch' : 'Medienbrüche',
+          `Unter ${anzahl(state.flows.length, 'Datenfluss', 'Datenflüssen')}${b.aufwandSumme ? `, zusammen ${b.aufwandSumme} Min./Monat` : ''}.${sugg ? ` ${anzahl(sugg, 'vorgeschlagener Fluss wartet', 'vorgeschlagene Flüsse warten')} auf Übernahme.` : ''}`);
+      }
+      if (tab === 'prozesse') {
+        return make(b.ohneProzess.length, b.ohneProzess.length === 1 ? 'Aufgabe ohne Prozess' : 'Aufgaben ohne Prozess',
+          `Von ${anzahl(tasks.length, 'Aufgabe', 'Aufgaben')} in ${anzahl(f.prozesse.length, 'Prozess', 'Prozessen')}. ${b.ohneProzess.length ? 'Ordnen Sie sie unten zu oder lassen Sie sie als Kandidaten für ein neues Branchenmodul stehen.' : 'Jede Aufgabe gehört zu einem Prozess.'}`);
+      }
+      if (tab === 'zielbild' && SL.zielsysteme(state).length) {
+        const u = SL.umstellungsliste(state);
+        const k = u.offen.aufgaben.length + u.offen.datenobjekte.length;
+        return make(k, k === 1 ? 'offene Entscheidung' : 'offene Entscheidungen', k
+          ? `${anzahl(u.offen.aufgaben.length, 'Aufgabe', 'Aufgaben')} und ${anzahl(u.offen.datenobjekte.length, 'Datenobjekt', 'Datenobjekte')} sind noch nicht entschieden.`
+          : 'Das Zielbild ist vollständig entschieden.');
+      }
+      if (tab === 'durchgang') {
+        const d = SL.durchgangBefunde(state);
+        const k = d.anders.length + d.unsicher.length + d.ergaenzungen.length;
+        const da = state.durchgang && state.durchgang.eingelesen;
+        return make(k, k === 1 ? 'offene Rückmeldung' : 'offene Rückmeldungen', da
+          ? `Ergebnis eingelesen am ${state.durchgang.eingelesen}: ${d.anders.length} anders, ${d.unsicher.length} unsicher, ${anzahl(d.ergaenzungen.length, 'Ergänzung', 'Ergänzungen')}.`
+          : 'Noch kein Ergebnis des Mandanten eingelesen.');
+      }
+      return null;
     }
 
     // --- Betrieb
@@ -139,22 +209,21 @@
       return [
         h('section', { class: 'panel' },
           h('h2', {}, 'Betrieb'),
-          h('div', { class: 'row' },
-            h('label', { for: 'betrieb' }, 'Name des Betriebs'),
-            h('input', { id: 'betrieb', k: 'betrieb', type: 'text', class: 'grow', value: state.meta.betrieb,
-              onchange: act((e) => { state.meta.betrieb = e.target.value.trim(); }) })),
+          h('div', { class: 'row felder' },
+            feld('Name des Betriebs', h('input', { id: 'betrieb', k: 'betrieb', type: 'text', value: state.meta.betrieb,
+              onchange: act((e) => { state.meta.betrieb = e.target.value.trim(); }) }))),
           h('p', { class: 'hint' }, 'Personen werden als Rollen erfasst (Buchhaltung, Inhaber), nicht mit Namen. Die Landkarte bleibt auf diesem Gerät, bis Sie sie speichern und weitergeben.')),
         h('section', { class: 'panel' },
           h('h2', {}, 'Branchenmodule'),
           h('p', { class: 'hint' }, 'Der Kern (Einkauf, Auftrag, Personal, Buchhaltung) gilt immer. Module bringen Prozesse, Schritte, Datenobjekte und Software ihrer Branche mit; mehrere sind möglich.'),
-          DATA.module.map((m) => h('div', { class: 'row' }, h('label', {},
+          DATA.module.map((m) => h('div', { class: 'row' }, h('label', { class: 'choice' },
             h('input', { type: 'checkbox', 'data-modul': m.id, checked: state.meta.module.includes(m.id),
               onchange: act((e) => {
                 const set = new Set(state.meta.module);
                 if (e.target.checked) set.add(m.id); else set.delete(m.id);
                 state.meta.module = DATA.module.map((x) => x.id).filter((id) => set.has(id));
               }) }),
-            ' ', h('b', {}, m.name), m.beschreibung ? ` – ${m.beschreibung}` : '')))),
+            h('span', {}, h('b', {}, m.name), m.beschreibung ? ` – ${m.beschreibung}` : ''))))),
         h('section', { class: 'panel' },
           h('h2', {}, 'Datei'),
           h('div', { class: 'row' },
@@ -165,7 +234,7 @@
             h('button', { id: 'new-map', onclick: () => { if (confirm('Neue, leere Landkarte beginnen? Der jetzige Stand geht verloren, wenn er nicht gespeichert ist.')) { state = SL.emptyState(); commit(); } } }, 'Neue Landkarte'),
             h('button', { id: 'load-example', onclick: () => { if (!state.systems.length || confirm('Den erfundenen Beispielbetrieb laden? Der jetzige Stand wird ersetzt.')) { state = SL.normalize(SL.clone(DATA.beispiel)); commit(); } } }, 'Beispielbetrieb laden')),
           h('p', { class: 'hint' }, 'Der Stand wird in diesem Browser automatisch gesichert. Die gespeicherte Datei (.landkarte.json) lässt sich jederzeit wieder öffnen, auch als Ausgangspunkt nach einer Umstellung.'),
-          state.meta.vorgaenger.length ? h('div', {}, h('h3', {}, 'Frühere Fassungen'), h('ul', {}, state.meta.vorgaenger.map((v) =>
+          state.meta.vorgaenger.length ? h('details', {}, h('summary', {}, `Frühere Fassungen (${state.meta.vorgaenger.length})`), h('ul', {}, state.meta.vorgaenger.map((v) =>
             h('li', {}, `Fassung ${v.version} bis ${v.bis}: ${v.systeme.length} Systeme`, v.abgeschaltet.length ? `, abgeschaltet: ${v.abgeschaltet.join(', ')}` : ''))))
             : null),
       ];
@@ -176,7 +245,7 @@
     function catalogSelect(id, filter) {
       const groups = {};
       for (const sw of cat().software.filter(filter || (() => true))) (groups[sw.kategorie] = groups[sw.kategorie] || []).push(sw);
-      return h('select', { id, class: 'grow' }, h('option', { value: '' }, '– aus dem Katalog wählen –'),
+      return h('select', { id }, h('option', { value: '' }, '– aus dem Katalog wählen –'),
         Object.entries(groups).map(([g, list]) => h('optgroup', { label: g }, list.map((sw) => h('option', { value: sw.id }, sw.name)))));
     }
 
@@ -188,7 +257,7 @@
       if (!item.durchgang) return null;
       const d = item.durchgang;
       const cls = d.wert === 'ok' ? 'ok' : d.wert === 'anders' ? 'bad' : 'warn';
-      return h('span', { class: `badge ${cls}`, title: d.text || '' }, `Mandant: ${SL.ANTWORTEN[d.wert]}${d.text ? ` – ${d.text}` : ''}${d.erledigt ? ' (erledigt)' : ''}`);
+      return h('span', { class: `chip ${cls}`, title: d.text || '' }, `Mandant: ${SL.ANTWORTEN[d.wert]}${d.text ? ` – ${d.text}` : ''}${d.erledigt ? ' (erledigt)' : ''}`);
     }
 
     function systeme() {
@@ -197,30 +266,29 @@
         rolesList(),
         h('section', { class: 'panel' },
           h('h2', {}, 'System hinzufügen'),
-          h('div', { class: 'row' }, catalogSelect('cat-system'),
+          h('div', { class: 'row felder' }, feld('System aus dem Katalog', catalogSelect('cat-system')),
             h('button', { class: 'primary', id: 'add-cat-system', onclick: act(() => {
               const v = document.getElementById('cat-system').value;
               if (!v) throw new Error('Bitte erst ein System aus dem Katalog wählen.');
               SL.addSystemFromCatalog(state, cat(), v, fw());
             }) }, 'Aus Katalog hinzufügen')),
           h('p', { class: 'hint' }, 'Mit einem Katalogsystem kommen seine typischen Aufgaben; im Reiter Aufgaben lassen sie sich einzeln ab- und anwählen.'),
-          h('div', { class: 'row' },
-            h('input', { type: 'text', id: 'free-system', class: 'grow', placeholder: 'Eigenes System, z. B. „Preisliste Excel“ oder „Ordner Lieferscheine“', oninput: (e) => { free.name = e.target.value; } }),
-            h('select', { id: 'free-system-art', onchange: (e) => { free.art = e.target.value; } }, options(SL.ARTEN, 'lokal')),
+          h('div', { class: 'row felder' },
+            feld('Eigenes System', h('input', { type: 'text', id: 'free-system', placeholder: 'z. B. „Preisliste Excel“ oder „Ordner Lieferscheine“', oninput: (e) => { free.name = e.target.value; } })),
+            feld('Art', h('select', { id: 'free-system-art', onchange: (e) => { free.art = e.target.value; } }, options(SL.ARTEN, 'lokal')), ''),
             h('button', { id: 'add-free-system', onclick: act(() => SL.addSystem(state, free)) }, 'Anlegen'))),
         h('section', { class: 'panel' },
           h('h2', {}, `Systeme (${state.systems.length})`),
-          state.systems.length ? null : h('p', { class: 'hint' }, 'Noch keine Systeme. Auch Excel-Listen, Papier und Postfächer zählen.'),
-          state.systems.map((s) => h('div', { class: `card${s.durchgang ? ` flag-${s.durchgang.wert}` : ''}`, 'data-system': s.id },
-            h('div', { class: 'row' },
-              h('input', { type: 'text', k: `sys-name-${s.id}`, class: 'grow', value: s.name, 'aria-label': 'Name', onchange: act((e) => SL.updateSystem(state, s.id, { name: e.target.value.trim() || s.name })) }),
+          state.systems.length ? h('div', { class: 'liste' },
+            h('div', { class: 'liste-kopf spalten systeme', 'aria-hidden': 'true' }, ['Name', 'Art', 'Zweck', 'Rollen', ''].map((x) => h('span', {}, x))),
+            state.systems.map((s) => h('div', { class: `item spalten systeme${s.durchgang ? ` flag-${s.durchgang.wert}` : ''}`, 'data-system': s.id },
+              h('input', { type: 'text', k: `sys-name-${s.id}`, value: s.name, 'aria-label': 'Name', onchange: act((e) => SL.updateSystem(state, s.id, { name: e.target.value.trim() || s.name })) }),
               h('select', { k: `sys-art-${s.id}`, 'aria-label': 'Art', onchange: act((e) => SL.updateSystem(state, s.id, { art: e.target.value })) }, options(SL.ARTEN, s.art)),
-              s.zielsystem ? h('span', { class: 'badge ok' }, 'Zielsystem') : null,
-              durchgangBadge(s),
-              h('button', { class: 'danger', onclick: act(() => { if (confirm(`„${s.name}“ mit allen Aufgaben und Flüssen entfernen?`)) SL.removeSystem(state, s.id); }) }, 'Entfernen')),
-            h('div', { class: 'row' },
-              h('input', { type: 'text', k: `sys-zweck-${s.id}`, class: 'grow', value: s.zweck, placeholder: 'Zweck in einem Satz', 'aria-label': 'Zweck', onchange: act((e) => SL.updateSystem(state, s.id, { zweck: e.target.value })) }),
-              h('input', { type: 'text', k: `sys-rollen-${s.id}`, class: 'grow', list: 'rollen', value: s.rollen.join(', '), placeholder: 'Rollen, mit Komma getrennt', 'aria-label': 'Rollen', onchange: act((e) => SL.updateSystem(state, s.id, { rollen: e.target.value.split(',').map((x) => x.trim()).filter(Boolean) })) }))))),
+              h('input', { type: 'text', k: `sys-zweck-${s.id}`, value: s.zweck, placeholder: 'Zweck in einem Satz', 'aria-label': 'Zweck', onchange: act((e) => SL.updateSystem(state, s.id, { zweck: e.target.value })) }),
+              h('input', { type: 'text', k: `sys-rollen-${s.id}`, list: 'rollen', value: s.rollen.join(', '), placeholder: 'mit Komma getrennt', 'aria-label': 'Rollen', onchange: act((e) => SL.updateSystem(state, s.id, { rollen: e.target.value.split(',').map((x) => x.trim()).filter(Boolean) })) }),
+              h('button', { class: 'danger', 'aria-label': `System ${s.name} entfernen`, onclick: act(() => { if (confirm(`„${s.name}“ mit allen Aufgaben und Flüssen entfernen?`)) SL.removeSystem(state, s.id); }) }, 'Entfernen'),
+              s.zielsystem || s.durchgang ? h('div', { class: 'voll' }, s.zielsystem ? h('span', { class: 'chip ok' }, 'Zielsystem') : null, durchgangBadge(s)) : null)))
+            : h('p', { class: 'hint' }, 'Hier erscheinen die Systeme des Betriebs, sobald Sie oben das erste hinzufügen.')),
       ];
     }
 
@@ -241,7 +309,7 @@
 
     function objectChecks(t, field) {
       if (!state.objects.length) return h('span', { class: 'hint' }, 'Noch keine Datenobjekte (Reiter Daten).');
-      return h('div', { class: 'checks' }, state.objects.map((o) => h('label', {},
+      return h('div', { class: 'checks' }, state.objects.map((o) => h('label', { class: 'choice' },
         h('input', { type: 'checkbox', checked: t[field].includes(o.id), onchange: act((e) => {
           const set = new Set(t[field]);
           if (e.target.checked) set.add(o.id); else set.delete(o.id);
@@ -253,23 +321,21 @@
       const breaks = SL.taskBreaks(state, t);
       const hint = SL.needsSteps(state, t);
       let stepName = '';
-      return h('div', { class: `card${t.durchgang ? ` flag-${t.durchgang.wert}` : ''}`, 'data-task': t.id },
-        h('div', { class: 'row' },
-          h('input', { type: 'text', k: `task-name-${t.id}`, class: 'grow', value: t.name, 'aria-label': 'Bezeichnung', onchange: act((e) => SL.updateTask(state, t.id, { name: e.target.value.trim() || t.name })) }),
-          h('input', { type: 'text', k: `task-rolle-${t.id}`, list: 'rollen', value: t.rolle, placeholder: 'Rolle', 'aria-label': 'Rolle', size: 12, onchange: act((e) => SL.updateTask(state, t.id, { rolle: e.target.value.trim() })) }),
+      return h('div', { class: `item spalten aufgaben${t.durchgang ? ` flag-${t.durchgang.wert}` : ''}`, 'data-task': t.id },
+          h('input', { type: 'text', k: `task-name-${t.id}`, value: t.name, 'aria-label': 'Bezeichnung', onchange: act((e) => SL.updateTask(state, t.id, { name: e.target.value.trim() || t.name })) }),
+          h('input', { type: 'text', k: `task-rolle-${t.id}`, list: 'rollen', value: t.rolle, 'aria-label': 'Rolle', onchange: act((e) => SL.updateTask(state, t.id, { rolle: e.target.value.trim() })) }),
           h('select', { k: `task-hf-${t.id}`, 'aria-label': 'Häufigkeit', onchange: act((e) => SL.updateTask(state, t.id, { haeufigkeit: e.target.value })) }, options(SL.HAEUFIGKEITEN, t.haeufigkeit)),
           processSelect(t, f, `task-proc-${t.id}`),
-          breaks.length ? h('span', { class: 'badge bad' }, `Medienbruch (${breaks.length})`) : null,
-          durchgangBadge(t),
-          h('button', { class: 'danger', 'aria-label': `Aufgabe ${t.name} entfernen`, onclick: act(() => SL.removeTask(state, t.id)) }, '×')),
+          h('button', { class: 'danger', 'aria-label': `Aufgabe ${t.name} entfernen`, onclick: act(() => SL.removeTask(state, t.id)) }, 'Entfernen'),
+          breaks.length || t.durchgang ? h('div', { class: 'voll' }, breaks.length ? h('span', { class: 'chip bad' }, `✗ Medienbruch (${breaks.length})`) : null, durchgangBadge(t)) : null,
         h('details', {},
-          h('summary', {}, `Daten und Schritte${t.schritte.length ? ` (${t.schritte.length} Schritte)` : ''}`, hint ? h('span', { class: 'badge warn' }, 'Zerlegen empfohlen') : null),
+          h('summary', {}, `Daten und Schritte${t.schritte.length ? ` (${t.schritte.length} Schritte)` : ''}`, hint ? h('span', { class: 'chip warn' }, '? Zerlegen empfohlen') : null),
           h('div', {}, h('b', {}, 'Liest: '), objectChecks(t, 'liest')),
           h('div', {}, h('b', {}, 'Schreibt: '), objectChecks(t, 'schreibt')),
           h('div', {}, h('b', {}, 'Schritte '), h('span', { class: 'hint' }, 'nur, wo ein Medienbruch oder doppelte Pflege genauer angesehen werden muss'),
             h('ol', {}, t.schritte.map((s) => h('li', {}, s.name, ' ', h('button', { class: 'link', onclick: act(() => SL.removeStep(state, t.id, s.id)) }, 'entfernen')))),
-            h('div', { class: 'row' },
-              h('input', { type: 'text', class: 'grow', placeholder: 'Schritt, z. B. „Preis aus der Excel-Liste abtippen“', 'data-step-input': t.id, oninput: (e) => { stepName = e.target.value; } }),
+            h('div', { class: 'row felder' },
+              feld('Neuer Schritt', h('input', { type: 'text', placeholder: 'z. B. „Preis aus der Excel-Liste abtippen“', 'data-step-input': t.id, oninput: (e) => { stepName = e.target.value; } })),
               h('button', { 'data-add-step': t.id, onclick: act(() => SL.addStep(state, t.id, stepName)) }, 'Schritt hinzufügen')))));
     }
 
@@ -283,15 +349,17 @@
         const tasks = state.tasks.filter((t) => t.systemId === s.id);
         let name = '';
         return h('section', { class: 'panel', 'data-system-tasks': s.id },
-          h('h2', {}, s.name, h('span', { class: 'badge' }, SL.ARTEN[s.art])),
+          h('h2', {}, s.name, h('span', { class: 'chip' }, SL.ARTEN[s.art])),
           proposals.length ? h('div', {}, h('h3', {}, 'Typische Aufgaben aus dem Katalog'),
-            h('div', { class: 'checks' }, proposals.map((p) => h('label', {},
+            h('div', { class: 'checks' }, proposals.map((p) => h('label', { class: 'choice' },
               h('input', { type: 'checkbox', 'data-cat-task': `${s.id}/${p.id}`, checked: tasks.some((t) => t.catalogRef === `${s.catalogId}/${p.id}`),
                 onchange: act((e) => SL.toggleCatalogTask(state, c, s.id, p.id, e.target.checked, f)) }), ' ', p.name)))) : null,
           h('h3', {}, `Aufgaben (${tasks.length})`),
-          tasks.map((t) => taskCard(t, f)),
-          h('div', { class: 'row' },
-            h('input', { type: 'text', class: 'grow', placeholder: 'Eigene Aufgabe', 'data-free-task': s.id, oninput: (e) => { name = e.target.value; } }),
+          tasks.length ? h('div', { class: 'liste' },
+            h('div', { class: 'liste-kopf spalten aufgaben', 'aria-hidden': 'true' }, ['Bezeichnung', 'Rolle', 'Häufigkeit', 'Prozess und Schritt', ''].map((x) => h('span', {}, x))),
+            tasks.map((t) => taskCard(t, f))) : null,
+          h('div', { class: 'row felder' },
+            feld('Eigene Aufgabe', h('input', { type: 'text', 'data-free-task': s.id, oninput: (e) => { name = e.target.value; } })),
             h('button', { 'data-add-task': s.id, onclick: act(() => SL.addTask(state, { name, systemId: s.id }, f)) }, 'Aufgabe anlegen')));
       })];
     }
@@ -302,22 +370,22 @@
       const c = cat();
       const sys = SL.istSystems(state);
       const free = { name: '', art: 'stamm' };
-      const status = (st) => (st === 'doppelt' ? h('span', { class: 'badge bad' }, 'doppelte Pflege') : st === 'luecke' ? h('span', { class: 'badge warn' }, 'kein führendes System') : null);
+      const status = (st) => (st === 'doppelt' ? h('span', { class: 'chip bad' }, '✗ doppelte Pflege') : st === 'luecke' ? h('span', { class: 'chip warn' }, '? kein führendes System') : h('span', { class: 'chip ok' }, '✓'));
       return [
         h('section', { class: 'panel' },
           h('h2', {}, 'Datenobjekte'),
-          h('div', { class: 'checks' }, c.datenobjekte.map((o) => h('label', {},
+          h('div', { class: 'checks' }, c.datenobjekte.map((o) => h('label', { class: 'choice' },
             h('input', { type: 'checkbox', 'data-cat-object': o.id, checked: !!SL.objById(state, o.id), onchange: act((e) => {
               if (e.target.checked) SL.ensureObject(state, c, o.id); else SL.removeObject(state, o.id);
             }) }), ' ', o.name))),
-          h('div', { class: 'row' },
-            h('input', { type: 'text', id: 'free-object', class: 'grow', placeholder: 'Eigenes Datenobjekt', oninput: (e) => { free.name = e.target.value; } }),
-            h('select', { onchange: (e) => { free.art = e.target.value; } }, options(SL.OBJEKTARTEN, 'stamm')),
+          h('div', { class: 'row felder' },
+            feld('Eigenes Datenobjekt', h('input', { type: 'text', id: 'free-object', oninput: (e) => { free.name = e.target.value; } })),
+            feld('Art', h('select', { onchange: (e) => { free.art = e.target.value; } }, options(SL.OBJEKTARTEN, 'stamm')), ''),
             h('button', { id: 'add-object', onclick: act(() => SL.addObject(state, free)) }, 'Anlegen'))),
         h('section', { class: 'panel' },
           h('h2', {}, 'Landkarte: wo liegen die Daten?'),
           h('p', { class: 'hint' }, 'Je Datenobjekt genau ein führendes System: dort wird angelegt und geändert. Alle anderen lesen oder haben eine Kopie.'),
-          state.objects.length && sys.length ? h('div', { class: 'scroll' }, h('table', { class: 'grid', id: 'matrix' },
+          state.objects.length && sys.length ? h('div', { class: 'table' }, h('table', { id: 'matrix' },
             h('thead', {}, h('tr', {}, h('th', {}, 'Datenobjekt'), sys.map((s) => h('th', {}, s.name)), h('th', {}, 'Befund'))),
             h('tbody', {}, state.objects.map((o) => {
               const st = SL.objectStatus(state, o.id);
@@ -348,34 +416,34 @@
         sugg.length ? h('section', { class: 'panel', id: 'flow-suggestions' },
           h('h2', {}, `Vorgeschlagene Flüsse (${sugg.length})`),
           h('p', { class: 'hint' }, 'Eine Aufgabe schreibt hier ein Datenobjekt in ein System, das es nicht führt. Wie kommen die Daten vom führenden System dorthin?'),
-          sugg.map((s) => {
+          h('div', { class: 'liste' }, sugg.map((s) => {
             let art = 'manuell';
-            return h('div', { class: 'row card', 'data-suggestion': `${s.objectId}|${s.from}|${s.to}` },
+            return h('div', { class: 'item', 'data-suggestion': `${s.objectId}|${s.from}|${s.to}` },
               h('span', { class: 'grow' }, h('b', {}, SL.objById(state, s.objectId).name), `: ${SL.sysById(state, s.from).name} → ${SL.sysById(state, s.to).name}`,
                 h('span', { class: 'hint' }, ` (Aufgabe „${(SL.taskById(state, s.taskId) || {}).name}“)`)),
-              h('select', { onchange: (e) => { art = e.target.value; } }, options(SL.FLUSSARTEN, 'manuell')),
-              h('button', { class: 'primary', onclick: act(() => SL.addFlow(state, { objectId: s.objectId, from: s.from, to: s.to, art })) }, 'Übernehmen'));
-          })) : null,
+              h('select', { 'aria-label': 'Art des Flusses', onchange: (e) => { art = e.target.value; } }, options(SL.FLUSSARTEN, 'manuell')),
+              h('button', { onclick: act(() => SL.addFlow(state, { objectId: s.objectId, from: s.from, to: s.to, art })) }, 'Übernehmen'));
+          }))) : null,
         h('section', { class: 'panel' },
-          h('h2', {}, `Datenflüsse (${state.flows.length})`, mb.list.length ? h('span', { class: 'badge bad' }, `${mb.list.length} Medienbrüche${mb.summe ? `, ${mb.summe} Min./Monat` : ''}`) : null),
-          state.flows.length ? h('div', { class: 'scroll' }, h('table', { class: 'grid', id: 'flows' },
-            h('thead', {}, h('tr', {}, ['Datenobjekt', 'Von', 'Nach', 'Art', 'Häufigkeit', 'Aufwand Min./Monat', ''].map((x) => h('th', {}, x)))),
+          h('h2', {}, `Datenflüsse (${state.flows.length})`, mb.list.length ? h('span', { class: 'chip bad' }, `✗ ${mb.list.length} Medienbrüche${mb.summe ? `, ${mb.summe} Min./Monat` : ''}`) : null),
+          state.flows.length ? h('div', { class: 'table' }, h('table', { id: 'flows' },
+            h('thead', {}, h('tr', {}, ['Datenobjekt', 'Von', 'Nach', 'Art', 'Häufigkeit', 'Aufwand Min./Monat', ''].map((x) => h('th', { class: /^Aufwand/.test(x) ? 'num' : '' }, x)))),
             h('tbody', {}, state.flows.map((fl) => h('tr', { 'data-flow': fl.id, class: SL.isMedienbruch(fl) ? 'dup' : '' },
               h('td', {}, h('select', { k: `fl-o-${fl.id}`, onchange: act((e) => SL.updateFlow(state, fl.id, { objectId: e.target.value })) }, objOptions(fl.objectId))),
               h('td', {}, h('select', { k: `fl-f-${fl.id}`, onchange: act((e) => SL.updateFlow(state, fl.id, { from: e.target.value })) }, sysOptions(fl.from))),
               h('td', {}, h('select', { k: `fl-t-${fl.id}`, onchange: act((e) => SL.updateFlow(state, fl.id, { to: e.target.value })) }, sysOptions(fl.to))),
               h('td', {}, h('select', { k: `fl-a-${fl.id}`, onchange: act((e) => SL.updateFlow(state, fl.id, { art: e.target.value })) }, options(SL.FLUSSARTEN, fl.art)),
-                SL.isMedienbruch(fl) ? h('span', { class: 'badge bad' }, 'Medienbruch') : null),
+                SL.isMedienbruch(fl) ? h('span', { class: 'chip bad' }, '✗ Medienbruch') : null),
               h('td', {}, h('select', { k: `fl-h-${fl.id}`, onchange: act((e) => SL.updateFlow(state, fl.id, { haeufigkeit: e.target.value })) }, options(SL.HAEUFIGKEITEN, fl.haeufigkeit))),
-              h('td', {}, SL.isMedienbruch(fl) ? h('input', { type: 'number', min: 0, step: 5, k: `fl-m-${fl.id}`, 'data-aufwand': fl.id, value: fl.aufwand == null ? '' : fl.aufwand, 'aria-label': 'Aufwand in Minuten pro Monat',
+              h('td', { class: 'num' }, SL.isMedienbruch(fl) ? h('input', { type: 'number', min: 0, step: 5, k: `fl-m-${fl.id}`, 'data-aufwand': fl.id, value: fl.aufwand == null ? '' : fl.aufwand, 'aria-label': 'Aufwand in Minuten pro Monat',
                 onchange: act((e) => SL.updateFlow(state, fl.id, { aufwand: e.target.value === '' ? null : Math.max(0, Number(e.target.value)) })) }) : h('span', { class: 'hint' }, '–')),
-              h('td', {}, h('button', { class: 'danger', onclick: act(() => SL.removeFlow(state, fl.id)) }, '×'))))))) : h('p', { class: 'hint' }, 'Noch keine Flüsse.'),
-          state.objects.length && sys.length > 1 ? h('div', { class: 'row', id: 'new-flow' },
-            h('select', { 'aria-label': 'Datenobjekt', onchange: (e) => { draft.objectId = e.target.value; } }, objOptions(draft.objectId)),
-            h('select', { 'aria-label': 'Von', onchange: (e) => { draft.from = e.target.value; } }, sysOptions(draft.from)), '→',
-            h('select', { 'aria-label': 'Nach', onchange: (e) => { draft.to = e.target.value; } }, sysOptions(draft.to)),
-            h('select', { 'aria-label': 'Art', onchange: (e) => { draft.art = e.target.value; } }, options(SL.FLUSSARTEN, draft.art)),
-            h('select', { 'aria-label': 'Häufigkeit', onchange: (e) => { draft.haeufigkeit = e.target.value; } }, options(SL.HAEUFIGKEITEN, draft.haeufigkeit)),
+              h('td', {}, h('button', { class: 'danger', 'aria-label': 'Fluss entfernen', onclick: act(() => SL.removeFlow(state, fl.id)) }, 'Entfernen'))))))) : h('p', { class: 'hint' }, 'Hier erscheinen die Datenflüsse zwischen den Systemen. Sie entstehen aus den Vorschlägen oder über „Fluss anlegen“.'),
+          state.objects.length && sys.length > 1 ? h('div', { class: 'row felder', id: 'new-flow' },
+            feld('Datenobjekt', h('select', { onchange: (e) => { draft.objectId = e.target.value; } }, objOptions(draft.objectId))),
+            feld('Von', h('select', { onchange: (e) => { draft.from = e.target.value; } }, sysOptions(draft.from))),
+            feld('Nach', h('select', { onchange: (e) => { draft.to = e.target.value; } }, sysOptions(draft.to))),
+            feld('Art', h('select', { onchange: (e) => { draft.art = e.target.value; } }, options(SL.FLUSSARTEN, draft.art)), ''),
+            feld('Häufigkeit', h('select', { onchange: (e) => { draft.haeufigkeit = e.target.value; } }, options(SL.HAEUFIGKEITEN, draft.haeufigkeit)), ''),
             h('button', { onclick: act(() => SL.addFlow(state, draft)) }, 'Fluss anlegen')) : null),
       ];
     }
@@ -389,19 +457,19 @@
         h('section', { class: 'panel', id: 'ohne-prozess' },
           h('h2', {}, `Ohne Prozess (${none.length})`),
           h('p', { class: 'hint' }, 'Was in keinen Prozess passt, bleibt hier sichtbar: Kandidat für ein neues Branchenmodul.'),
-          none.map((t) => {
+          h('div', { class: 'liste' }, none.map((t) => {
             const sug = SL.suggestProcess(t.schrittRef, f);
-            return h('div', { class: 'row card', 'data-unassigned': t.id },
+            return h('div', { class: 'item', 'data-unassigned': t.id },
               h('span', { class: 'grow' }, t.name, h('span', { class: 'hint' }, ` (${SL.sysById(state, t.systemId).name})`)),
               sug ? h('button', { onclick: act(() => SL.assignTask(state, t.id, sug.prozess, sug.schritt)) }, `Vorschlag: ${f.prozess(sug.prozess).name}`) : null,
               processSelect(t, f, `un-${t.id}`));
-          })),
+          }))),
         f.prozesse.map((p) => {
           const seq = SL.sequence(state, f, p.id);
           return h('section', { class: 'panel', 'data-process': p.id },
-            h('h2', {}, p.name, p.modul ? h('span', { class: 'badge' }, `Modul ${p.modul}`) : null),
+            h('h2', {}, p.name, p.modul ? h('span', { class: 'chip' }, `Modul ${p.modul}`) : null),
             h('p', { class: 'hint' }, 'Schritte: ', p.schritte.map((s) => s.name).join(' → ')),
-            h('div', { class: 'report scroll', html: SL.report.swimlane(state, f, p.id) }),
+            h('div', { class: 'report table', html: SL.report.swimlane(state, f, p.id) }),
             seq.length ? h('details', { class: 'no-print' }, h('summary', {}, 'Reihenfolge und Zuordnung ändern'),
               h('ol', { class: 'seq' }, seq.map((t, i) => h('li', { 'data-seq': t.id }, h('div', { class: 'row' },
                 h('button', { 'aria-label': 'nach oben', disabled: i === 0, onclick: act(() => SL.moveInSequence(state, f, p.id, t.id, -1)) }, '↑'),
@@ -424,7 +492,7 @@
         h('section', { class: 'panel' },
           h('h2', {}, 'Neue Software'),
           h('p', { class: 'hint' }, 'Das Werkzeug entscheidet nichts, es macht die Entscheidung vollständig: je Aufgabe wandert, bleibt, entfällt oder unklar, je Datenobjekt das künftig führende System.'),
-          h('div', { class: 'row' }, catalogSelect('cat-ziel'),
+          h('div', { class: 'row felder' }, feld('Software aus dem Katalog', catalogSelect('cat-ziel')),
             h('button', { id: 'add-ziel-cat', onclick: act(() => {
               const v = document.getElementById('cat-ziel').value;
               if (!v) throw new Error('Bitte erst eine Software wählen.');
@@ -432,15 +500,15 @@
               const s = SL.addSystem(state, { name: sw.name, art: sw.art, zweck: sw.zweck, catalogId: sw.id });
               SL.setZielsystem(state, s.id, true);
             }) }, 'Als Zielsystem anlegen')),
-          h('div', { class: 'row' },
-            h('input', { type: 'text', id: 'ziel-name', class: 'grow', placeholder: 'oder Name der neuen Software', oninput: (e) => { free.name = e.target.value; } }),
+          h('div', { class: 'row felder' },
+            feld('oder Name der neuen Software', h('input', { type: 'text', id: 'ziel-name', oninput: (e) => { free.name = e.target.value; } })),
             h('button', { id: 'add-ziel', onclick: act(() => { const s = SL.addSystem(state, { name: free.name, art: 'cloud' }); SL.setZielsystem(state, s.id, true); }) }, 'Als Zielsystem anlegen')),
-          h('div', { class: 'checks' }, state.systems.map((s) => h('label', {},
-            h('input', { type: 'checkbox', 'data-ziel-system': s.id, checked: !!s.zielsystem, onchange: act((e) => SL.setZielsystem(state, s.id, e.target.checked)) }), ' ', s.name, ' ist Zielsystem')))),
+          h('div', { class: 'checks' }, state.systems.map((s) => h('label', { class: 'choice' },
+            h('input', { type: 'checkbox', 'data-ziel-system': s.id, checked: !!s.zielsystem, onchange: act((e) => SL.setZielsystem(state, s.id, e.target.checked)) }), `${s.name} ist Zielsystem`)))),
         ziel.length ? [
           h('section', { class: 'panel' },
             h('h2', {}, 'Aufgaben: Ist und Ziel'),
-            h('div', { class: 'scroll' }, h('table', { class: 'grid', id: 'ziel-aufgaben' },
+            h('div', { class: 'table' }, h('table', { id: 'ziel-aufgaben' },
               h('thead', {}, h('tr', {}, ['Aufgabe', 'Ist: System', 'Entscheidung', 'Ziel: System'].map((x) => h('th', {}, x)))),
               h('tbody', {}, tasks.map((t) => h('tr', { 'data-ziel-task': t.id },
                 h('td', {}, t.name), h('td', {}, SL.sysById(state, t.systemId).name),
@@ -448,11 +516,11 @@
                 h('td', { class: t.ziel === 'wandert' ? 'lead' : '' }, targetOf(t)))))))),
           h('section', { class: 'panel' },
             h('h2', {}, 'Datenobjekte: heute und künftig führend'),
-            h('div', { class: 'scroll' }, h('table', { class: 'grid', id: 'ziel-objekte' },
+            h('div', { class: 'table' }, h('table', { id: 'ziel-objekte' },
               h('thead', {}, h('tr', {}, ['Datenobjekt', 'Ist: führend', 'Ziel: führend'].map((x) => h('th', {}, x)))),
               h('tbody', {}, state.objects.map((o) => h('tr', { 'data-ziel-object': o.id },
                 h('td', {}, o.name),
-                h('td', {}, SL.leaders(state, o.id).map((id) => SL.sysById(state, id).name).join(', ') || h('span', { class: 'badge warn' }, 'keines')),
+                h('td', {}, SL.leaders(state, o.id).map((id) => SL.sysById(state, id).name).join(', ') || h('span', { class: 'chip warn' }, '? keines')),
                 h('td', {}, h('select', { k: `zf-${o.id}`, onchange: act((e) => SL.setZielFuehrend(state, o.id, e.target.value)) },
                   h('option', { value: '' }, '– offen –'),
                   [...ziel, ...ist].map((s) => h('option', { value: s.id, selected: o.zielFuehrend === s.id }, s.name + (s.zielsystem ? ' (neu)' : ''))))))))))),
@@ -495,14 +563,14 @@
         h('section', { class: 'panel', id: 'durchgang-befunde' },
           h('h2', {}, 'Was der Mandant anders sieht'),
           h('h3', {}, `Anders (${d.anders.length})`),
-          d.anders.map((x) => h('div', { class: 'card flag-anders', 'data-anders': x.item.id }, h('div', { class: 'row' },
+          d.anders.map((x) => h('div', { class: 'item flag-anders', 'data-anders': x.item.id }, h('div', { class: 'row' },
             h('span', { class: 'grow' }, h('b', {}, x.label), `: ${x.item.durchgang.text || '(ohne Text)'}`),
             h('button', { onclick: done(x.item) }, 'Erledigt')))),
           h('h3', {}, `Unsicher (${d.unsicher.length})`),
-          d.unsicher.map((x) => h('div', { class: 'card flag-unsicher', 'data-unsicher': x.item.id }, h('div', { class: 'row' },
+          d.unsicher.map((x) => h('div', { class: 'item flag-unsicher', 'data-unsicher': x.item.id }, h('div', { class: 'row' },
             h('span', { class: 'grow' }, x.label), h('button', { onclick: done(x.item) }, 'Geklärt')))),
           h('h3', {}, `Ergänzungen (${d.ergaenzungen.length})`),
-          d.ergaenzungen.map((e) => h('div', { class: 'card', 'data-ergaenzung': e.id }, h('div', { class: 'row' },
+          d.ergaenzungen.map((e) => h('div', { class: 'item', 'data-ergaenzung': e.id }, h('div', { class: 'row' },
             h('span', { class: 'grow' }, e.text),
             h('button', { onclick: act(() => { SL.addSystem(state, { name: e.text, art: 'lokal', zweck: 'vom Mandanten ergänzt' }); e.erledigt = true; }) }, 'Als System anlegen'),
             h('button', { onclick: act(() => { e.erledigt = true; }) }, 'Erledigt'))))),
@@ -519,7 +587,7 @@
           h('h2', {}, 'Bericht und Export'),
           h('div', { class: 'row' },
             h('button', { class: 'primary', id: 'print', onclick: () => window.print() }, 'Drucken'),
-            h('button', { id: 'dl-report', onclick: () => download(`${fileBase()}.bericht.html`, SL.report.reportDocument(state, f), 'text/html') }, 'Bericht als HTML'),
+            h('button', { id: 'dl-report', onclick: () => download(`${fileBase()}.bericht.html`, SL.report.reportDocument(state, f, document.getElementById('sl-stil').textContent), 'text/html') }, 'Bericht als HTML'),
             h('button', { id: 'dl-matrix', onclick: () => download(`${fileBase()}-matrix.csv`, bom + SL.matrixCsv(state), 'text/csv') }, 'Matrix als CSV'),
             h('button', { id: 'dl-tasks', onclick: () => download(`${fileBase()}-aufgaben.csv`, bom + SL.aufgabenCsv(state, f), 'text/csv') }, 'Aufgaben als CSV'),
             h('button', { onclick: () => download(`${fileBase()}.landkarte.json`, SL.toFile(state), 'application/json') }, 'Landkarte speichern (JSON)'))),
@@ -568,12 +636,12 @@
         const add = () => { if (draft.trim()) { st.ergaenzungen.push(draft.trim()); save(); render(); const i = document.getElementById('erg-input'); if (i) i.focus(); } };
         const firstOpen = list.findIndex((x) => x.kind !== 'ergaenzungen' && !st.answers[x.key]);
         body = [
-          h('div', { class: 'kicker' }, 'Zum Schluss'),
+          h('div', { class: 'label' }, 'Zum Schluss'),
           h('div', { class: 'title' }, 'Welche Programme, Listen oder Ordner nutzen Sie noch?'),
-          h('p', { class: 'intro' }, 'Alles, was oben nicht vorkam: auch Excel-Listen, Papierordner, Notizbücher oder Postfächer.'),
+          h('p', { class: 'hint' }, 'Alles, was oben nicht vorkam: auch Excel-Listen, Papierordner, Notizbücher oder Postfächer.'),
           h('ul', { id: 'erg-list' }, st.ergaenzungen.map((e, i) => h('li', {}, e, ' ', h('button', { class: 'link', 'aria-label': `${e} entfernen`, onclick: () => { st.ergaenzungen.splice(i, 1); save(); render(); } }, 'entfernen')))),
-          h('div', { class: 'row' },
-            h('input', { type: 'text', id: 'erg-input', class: 'grow', placeholder: 'z. B. Excel-Liste mit Preisen', oninput: (e) => { draft = e.target.value; }, onkeydown: (e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } } }),
+          h('div', { class: 'row felder' },
+            feld('Programm, Liste oder Ordner', h('input', { type: 'text', id: 'erg-input', placeholder: 'z. B. Excel-Liste mit Preisen', oninput: (e) => { draft = e.target.value; }, onkeydown: (e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } } })),
             h('button', { id: 'erg-add', onclick: add }, 'Hinzufügen')),
           h('hr', {}),
           firstOpen >= 0 ? h('p', {}, `Noch ${p.total - p.done} Karten ohne Antwort. `, h('button', { class: 'link', id: 'goto-open', onclick: () => go(firstOpen) }, 'Zur ersten offenen Karte')) : h('p', {}, 'Alle Karten sind beantwortet. Danke!'),
@@ -582,21 +650,21 @@
             download(`durchgang-${SL.today()}.durchgang.json`, JSON.stringify(result, null, 2), 'application/json');
             toast('Ergebnis gespeichert. Bitte schicken Sie die Datei an Ihre Kanzlei.');
           } }, 'Ergebnis speichern'),
-          h('p', { class: 'intro' }, 'Es entsteht eine Datei, die Sie Ihrer Kanzlei schicken. Nichts wird automatisch übertragen.'),
+          h('p', { class: 'hint' }, 'Es entsteht eine Datei, die Sie Ihrer Kanzlei schicken. Nichts wird automatisch übertragen.'),
         ];
       } else {
         const s = c.system;
         body = [
           c.kind === 'system'
-            ? [h('div', { class: 'kicker' }, `Programm oder Ablage · ${SL.ARTEN[s.art]}`),
+            ? [h('div', { class: 'label' }, `Programm oder Ablage · ${SL.ARTEN[s.art]}`),
               h('div', { class: 'title' }, s.name),
               s.zweck ? h('p', {}, h('b', {}, 'Wofür: '), s.zweck) : null,
               s.rollen.length ? h('p', {}, h('b', {}, 'Wer arbeitet damit: '), s.rollen.join(', ')) : null,
-              h('p', { class: 'intro' }, 'Nutzen Sie das so?')]
-            : [h('div', { class: 'kicker' }, `Aufgabe in ${s.name}`),
+              h('p', { class: 'frage' }, 'Nutzen Sie das so?')]
+            : [h('div', { class: 'label' }, `Aufgabe in ${s.name}`),
               h('div', { class: 'title' }, c.task.name),
               h('p', {}, h('b', {}, 'Wer: '), c.task.rolle || '–', ' · ', h('b', {}, 'Wie oft: '), SL.HAEUFIGKEITEN[c.task.haeufigkeit]),
-              h('p', { class: 'intro' }, `Erledigen Sie das so in ${s.name}?`)],
+              h('p', { class: 'frage' }, `Erledigen Sie das so in ${s.name}?`)],
           h('div', { class: 'answers', role: 'group', 'aria-label': 'Antwort' },
             h('button', { 'data-answer': 'ok', 'aria-pressed': String(!!a && a.wert === 'ok'), onclick: () => choose('ok') }, '✓ So ist es'),
             h('button', { 'data-answer': 'anders', 'aria-pressed': String(!!a && a.wert === 'anders'), onclick: () => choose('anders') }, '✗ Anders'),
@@ -609,15 +677,17 @@
         ];
       }
       app.replaceChildren(h('div', { class: 'walk' },
-        h('h1', {}, 'Ihre Software-Landkarte'),
-        h('p', { class: 'intro' }, payload.betrieb ? `${payload.betrieb}: ` : '', 'Ihre Kanzlei hat eingetragen, was sie über Ihre Programme und Abläufe weiß. Bestätigen Sie jede Karte oder sagen Sie, was anders ist. Ihr Stand bleibt in diesem Browser gespeichert; Sie können jederzeit unterbrechen.'),
+        h('header', { class: 'masthead' },
+          h('div', { class: 'label' }, h('span', {}, payload.betrieb || 'Durchgang'), h('span', {}, `Karte ${st.index + 1} von ${list.length}`)),
+          h('h1', {}, 'Ihre Software-Landkarte'),
+          h('p', { class: 'sub' }, 'Ihre Kanzlei hat eingetragen, was sie über Ihre Programme und Abläufe weiß. Bestätigen Sie jede Karte oder sagen Sie, was anders ist. Ihr Stand bleibt in diesem Browser gespeichert; Sie können jederzeit unterbrechen.')),
         h('div', { class: 'progress', role: 'progressbar', 'aria-label': 'Fortschritt', 'aria-valuemin': 0, 'aria-valuemax': p.total, 'aria-valuenow': p.done },
           h('div', { style: `width:${p.percent}%` })),
-        h('div', { class: 'keys', id: 'progress-text' }, `${p.done} von ${p.total} beantwortet · Karte ${st.index + 1} von ${list.length}`),
-        h('div', { class: 'bigcard', 'data-card': c.key }, body),
+        h('div', { class: 'step', id: 'progress-text' }, `${p.done} von ${p.total} beantwortet · Karte ${st.index + 1} von ${list.length}`),
+        h('div', { class: 'card', 'data-card': c.key }, body),
         h('div', { class: 'nav' },
           h('button', { id: 'prev', disabled: st.index === 0, onclick: () => go(st.index - 1) }, '← Zurück'),
-          h('span', { class: 'keys' }, 'Tasten: 1 = so ist es, 2 = anders, 3 = unsicher, Pfeile = blättern'),
+          h('span', { class: 'hint' }, 'Tasten: 1 = so ist es, 2 = anders, 3 = unsicher, Pfeile = blättern'),
           h('button', { id: 'next', disabled: st.index === list.length - 1, onclick: () => go(st.index + 1) }, 'Weiter →'))));
     }
 

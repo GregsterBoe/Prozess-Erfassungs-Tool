@@ -129,7 +129,7 @@ test('systeme and aufgaben: choose from the catalog, switch proposals off, add o
   const [a, b] = saved.systems.map((s) => s.id);
   await page.selectOption(`[data-cell="artikel|${a}"]`, 'fuehrt');
   await page.selectOption(`[data-cell="artikel|${b}"]`, 'fuehrt');
-  await page.waitForSelector('[data-object="artikel"] .badge.bad');
+  await page.waitForSelector('[data-object="artikel"] .chip.bad');
   assert.match(await page.textContent('[data-object="artikel"]'), /doppelte Pflege/);
   assert.match(await page.textContent('[data-object="kunden"]'), /kein führendes System/);
   // The Excel list only copies prices, but a task there writes them: a flow is proposed.
