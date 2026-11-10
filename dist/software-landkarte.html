@@ -5,80 +5,324 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Software-Landkarte</title>
-<style>:root {
-  --bg: #f6f7f9; --panel: #fff; --ink: #1d232a; --muted: #57606a; --line: #d0d7de;
-  --accent: #0b5cad; --accent-ink: #fff; --ok: #1a7f37; --warn: #9a3412; --bad: #b42318; --soft: #eef3f8;
+<style id="sl-stil">/* House style: tokens */
+:root {
+  color-scheme: light;
+  --paper: #ecf0f2;
+  --sheet: #ffffff;
+  --sunk: #dee2e3;
+  --ink: #0c1418;
+  --muted: #5c5e5f;
+  --rule: #c6cacb;
+  --accent: #006394;
+  --accent-soft: #deebf1;
+  --ok: #1b6e41;
+  --ok-bg: #dfebe4;
+  --warn: #8a5405;
+  --warn-bg: #efe7dc;
+  --bad: #b0372b;
+  --bad-bg: #f4e3e1;
+  --info: #5b4a9e;
+  --info-bg: #e6e1f4;
+  --s1: #006394;
+  --s2: #e4521b;
+  --s3: #1f7a4d;
+  --s4: #737373;
+  --f-display: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --f-body: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --f-ui: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --f-mono: "Cascadia Mono", Consolas, "SF Mono", Menlo, "DejaVu Sans Mono", monospace;
+  --r: 3px;
+  --r-lg: 4px;
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 20px;
+  --sp-5: 32px;
+  --sp-6: 48px;
+  --t-s: 12.8px;
+  --t-m: 16px;
+  --t-l: 20px;
+  --t-xl: 25px;
+  --t-xxl: 31.2px;
+  --row: 8px;
+  --lh: 1.55;
 }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --paper: #131718;
+    --sheet: #1c2223;
+    --sunk: #2e3537;
+    --ink: #e5e9eb;
+    --muted: #aab0b1;
+    --rule: #3d4142;
+    --accent: #7cbede;
+    --accent-soft: #31444c;
+    --ok: #6fd09a;
+    --ok-bg: #2d453b;
+    --warn: #e9b45a;
+    --warn-bg: #453f2e;
+    --bad: #f09184;
+    --bad-bg: #463836;
+    --info: #b9a9ee;
+    --info-bg: #38334c;
+    --s1: #7cbede;
+    --s2: #e1a189;
+    --s3: #b9d45c;
+    --s4: #8b8f91;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --paper: #131718;
+  --sheet: #1c2223;
+  --sunk: #2e3537;
+  --ink: #e5e9eb;
+  --muted: #aab0b1;
+  --rule: #3d4142;
+  --accent: #7cbede;
+  --accent-soft: #31444c;
+  --ok: #6fd09a;
+  --ok-bg: #2d453b;
+  --warn: #e9b45a;
+  --warn-bg: #453f2e;
+  --bad: #f09184;
+  --bad-bg: #463836;
+  --info: #b9a9ee;
+  --info-bg: #38334c;
+  --s1: #7cbede;
+  --s2: #e1a189;
+  --s3: #b9d45c;
+  --s4: #8b8f91;
+}
+
+@media print {
+  :root:root:root {
+  color-scheme: light;
+  --paper: #ecf0f2;
+  --sheet: #ffffff;
+  --sunk: #dee2e3;
+  --ink: #0c1418;
+  --muted: #5c5e5f;
+  --rule: #c6cacb;
+  --accent: #006394;
+  --accent-soft: #deebf1;
+  --ok: #1b6e41;
+  --ok-bg: #dfebe4;
+  --warn: #8a5405;
+  --warn-bg: #efe7dc;
+  --bad: #b0372b;
+  --bad-bg: #f4e3e1;
+  --info: #5b4a9e;
+  --info-bg: #e6e1f4;
+  --s1: #006394;
+  --s2: #e4521b;
+  --s3: #1f7a4d;
+  --s4: #737373;
+  --f-display: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --f-body: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --f-ui: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --f-mono: "Cascadia Mono", Consolas, "SF Mono", Menlo, "DejaVu Sans Mono", monospace;
+  --r: 3px;
+  --r-lg: 4px;
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 20px;
+  --sp-5: 32px;
+  --sp-6: 48px;
+  --t-s: 12.8px;
+  --t-m: 16px;
+  --t-l: 20px;
+  --t-xl: 25px;
+  --t-xxl: 31.2px;
+  --row: 8px;
+  --lh: 1.55;
+}
+}
+</style>
+<style>/* House style: base */
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-header.top { background: var(--panel); border-bottom: 1px solid var(--line); padding: 10px 16px; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; }
-header.top h1 { font-size: 18px; margin: 0; }
-header.top .sub { color: var(--muted); }
-nav.tabs { display: flex; flex-wrap: wrap; gap: 4px; padding: 8px 16px 0; background: var(--panel); border-bottom: 1px solid var(--line); }
-nav.tabs button { border: 1px solid transparent; border-bottom: none; background: none; padding: 8px 12px; border-radius: 6px 6px 0 0; cursor: pointer; font: inherit; color: var(--muted); }
-nav.tabs button[aria-selected="true"] { background: var(--bg); border-color: var(--line); color: var(--ink); font-weight: 600; margin-bottom: -1px; }
-nav.tabs .count { font-size: 12px; color: var(--muted); margin-left: 4px; }
-main { padding: 16px; max-width: 1200px; margin: 0 auto; }
-section.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; margin: 0 0 14px; }
-section.panel h2 { font-size: 16px; margin: 0 0 8px; }
-section.panel h3 { font-size: 14px; margin: 12px 0 6px; }
-p.hint { color: var(--muted); margin: 4px 0 10px; font-size: 14px; }
-.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 6px 0; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: var(--t-m)/var(--lh) var(--f-body); }
+a { color: var(--accent); text-underline-offset: 0.18em; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.wrap { max-width: 1120px; margin: 0 auto; padding: var(--sp-4) 16px var(--sp-6); }
+h1, h2, h3 { font-family: var(--f-display); line-height: 1.1; text-wrap: balance; hyphens: auto; overflow-wrap: break-word; }
+h1 { margin: 0 0 var(--sp-1); font-size: var(--t-xxl); font-weight: 800; letter-spacing: -0.025em; }
+h2 { margin: var(--sp-5) 0 var(--sp-2); font-size: var(--t-xl); font-weight: 800; letter-spacing: -0.015em; }
+h3 { margin: 0 0 var(--sp-1); font-size: var(--t-l); font-weight: 700; }
+.sub { margin: var(--sp-1) 0 0; color: var(--muted); font: var(--t-m)/1.45 var(--f-ui); max-width: 68ch; }
+.label { font: 600 var(--t-s)/1.2 var(--f-ui); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+/* the page head under a heavy rule; .label above h1 can hold two ends: what, and when */
+.masthead { border-top: 3px solid var(--ink); padding-top: var(--sp-2); margin-bottom: var(--sp-4); }
+.masthead .label { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--sp-2); margin-bottom: var(--sp-2); }
+/* the grid: a narrow key column beside the main one; .even for equal columns */
+.grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: var(--sp-3) var(--sp-4); align-items: start; }
+.grid.even { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.grid > * { min-width: 0; }
+.grid > * > h2:first-child { margin-top: 0; }
+.section { margin-top: var(--sp-5); }
+@media (max-width: 760px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+/* summary first: what the page says, before the detail */
+.summary { border-top: 1px solid var(--ink); border-bottom: 1px solid var(--rule); padding: var(--sp-3) 0; margin-bottom: var(--sp-4); }
+.key { display: block; font: 800 calc(var(--t-xxl) * 1.6)/0.95 var(--f-display); letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+.key small { font-size: 0.4em; font-weight: 600; letter-spacing: 0; }
+/* a card is one object that stands on its own; lists of like things go in a table */
+.card { background: var(--sheet); border: 1px solid var(--rule); border-radius: var(--r-lg); padding: var(--sp-3); }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--sp-3); }
+.row { display: flex; flex-wrap: wrap; gap: var(--sp-1); align-items: center; }
+.btn { display: inline-flex; align-items: center; gap: 6px; min-height: 38px; padding: 0 var(--sp-2); border-radius: var(--r); cursor: pointer;
+  border: 1px solid var(--ink); background: var(--sheet); color: var(--ink); text-decoration: none; font: 600 var(--t-s)/1.2 var(--f-ui); }
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--sheet); }
+.btn.primary:hover { filter: brightness(1.08); color: var(--sheet); }
+.btn.danger { border-color: var(--bad); color: var(--bad); }
+.btn.danger.primary { background: var(--bad); color: var(--sheet); }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; filter: none; }
+@media (pointer: coarse) { .btn { min-height: 44px; } }
+.chip { display: inline-flex; align-items: center; gap: 5px; padding: 1px 7px; border-radius: var(--r); white-space: nowrap;
+  font: 600 calc(var(--t-s) * 0.92)/1.6 var(--f-ui); letter-spacing: 0.02em; background: var(--sunk); color: var(--muted); }
+.chip.ok { background: var(--ok-bg); color: var(--ok); } .chip.warn { background: var(--warn-bg); color: var(--warn); }
+.chip.bad { background: var(--bad-bg); color: var(--bad); } .chip.info { background: var(--info-bg); color: var(--info); }
+.chip.acc { background: var(--accent-soft); color: var(--accent); }
+.msg { margin: 0; padding: var(--sp-1) var(--sp-2); border-left: 3px solid var(--info); font: var(--t-s)/1.45 var(--f-ui); background: var(--info-bg); color: var(--info); }
+.msg.ok { background: var(--ok-bg); color: var(--ok); border-color: var(--ok); }
+.msg.bad { background: var(--bad-bg); color: var(--bad); border-color: var(--bad); }
+/* forms: one question per view, the label says what, .hint says how, errors gathered on top */
+.form { display: grid; gap: var(--sp-3); max-width: 38rem; }
+.step { font: var(--t-s)/1.3 var(--f-ui); color: var(--muted); }
+label, .field { display: grid; gap: var(--sp-1); font: 600 var(--t-m)/1.3 var(--f-ui); }
+.hint { font: 400 var(--t-s)/1.4 var(--f-ui); color: var(--muted); }
+.field.error { border-left: 4px solid var(--bad); padding-left: var(--sp-2); }
+.field .why { font: 700 var(--t-s)/1.4 var(--f-ui); color: var(--bad); }
+.errors { border: 3px solid var(--bad); background: var(--sheet); padding: var(--sp-2) var(--sp-3); }
+.errors h2 { margin: 0 0 var(--sp-1); font-size: var(--t-l); }
+.errors ul { margin: 0; padding-left: 1.1em; } .errors a { color: var(--bad); font-weight: 700; }
+input, select, textarea { width: 100%; min-height: 42px; border: 2px solid var(--rule); border-radius: var(--r); background: var(--sheet);
+  color: var(--ink); padding: 6px 10px; font: var(--t-m)/1.4 var(--f-ui); }
+input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+.field.error input, .field.error select, .field.error textarea { border-color: var(--bad); }
+input.short { max-width: 12ch; }
+.choice { display: flex; gap: var(--sp-1); align-items: center; font-weight: 400; cursor: pointer; }
+.choice input { width: 22px; height: 22px; min-height: 0; margin: 0; accent-color: var(--accent); flex: none; }
+details > summary { cursor: pointer; color: var(--accent); font: 600 var(--t-s)/1.4 var(--f-ui); }
+/* tables are ledgers: a heavy rule under the head, figures in mono, the total double-ruled */
+table { width: 100%; border-collapse: collapse; font: var(--t-m)/1.35 var(--f-ui); }
+th { text-align: left; font: 600 calc(var(--t-s) * 0.92)/1.3 var(--f-ui); letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--muted); border-bottom: 2px solid var(--ink); padding: var(--row) var(--sp-1); vertical-align: bottom; }
+td { border-bottom: 1px solid var(--rule); padding: var(--row) var(--sp-1); vertical-align: top; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.num { font-family: var(--f-mono); font-size: 0.86em; }
+td.mark { width: 1.6em; padding-inline: 0; text-align: center; font-weight: 700; color: var(--muted); }
+td.mark.ok { color: var(--ok); } td.mark.warn { color: var(--warn); } td.mark.bad { color: var(--bad); }
+tr.sum td { border-top: 1px solid var(--ink); border-bottom: 0; font-weight: 700; }
+tr.sum td.num { border-bottom: 3px double var(--ink); }
+.table { overflow-x: auto; }
+code, .mono { font: 0.86em var(--f-mono); }
+code { background: var(--sunk); padding: 1px 4px; border-radius: var(--r); }
+.bar { display: flex; height: 8px; background: var(--sunk); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--s1); }
+@media print { body { background: #fff; color: #000; } .card { border-color: #bbb; } .btn { display: none; } }
+
+/* Software-Landkarte: what the app adds to the house classes in stil.css. Colours,
+ * typefaces, sizes and spacing come only from that style's variables. */
+.wrap { padding-top: var(--sp-3); }
+.masthead h1 { font-size: var(--t-xl); }
+h2 { margin: 0 0 var(--sp-2); font-size: var(--t-l); }
+h3 { margin: var(--sp-3) 0 var(--sp-1); font-size: var(--t-m); }
+p { margin: 0 0 var(--sp-2); max-width: 78ch; }
+hr { border: 0; border-top: 1px solid var(--rule); margin: var(--sp-3) 0; }
+
+/* Tabs: a row of words on one rule; the heavy underline marks where you are. */
+nav.tabs { display: flex; flex-wrap: wrap; gap: 0 var(--sp-4); border-bottom: 1px solid var(--rule); margin-bottom: var(--sp-4); }
+nav.tabs button { border: 0; border-bottom: 3px solid transparent; margin-bottom: -1px; background: none; padding: var(--sp-2) 0;
+  cursor: pointer; color: var(--muted); font: 600 var(--t-m)/1.3 var(--f-ui); }
+nav.tabs button:hover { color: var(--accent); }
+nav.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink); }
+nav.tabs .count { margin-left: var(--sp-1); color: var(--muted); font: var(--t-s) var(--f-mono); }
+
+/* Summary first: the one figure of the view and what it means. */
+.lage .key small { display: block; margin-top: var(--sp-2); font: 600 var(--t-m)/1.3 var(--f-ui); letter-spacing: 0; }
+.lage p { margin: 0; }
+.lage + section.panel { border-top: 0; padding-top: 0; margin-top: 0; }
+
+/* Sections stand under a fine rule, not in a box. */
+section.panel { border-top: 1px solid var(--rule); padding-top: var(--sp-3); margin-top: var(--sp-4); }
+section.panel:first-child { border-top: 0; padding-top: 0; margin-top: 0; }
+section.panel > .hint, section.panel > div > .hint { display: block; max-width: 78ch; margin: 0 0 var(--sp-2); }
+
+/* Rows of controls. A labelled field is a label around its control. */
+.row { gap: var(--sp-2); margin: var(--sp-2) 0; }
+.row.felder { align-items: end; }
+.row > input, .row > select { width: auto; }
+.row > label:not(.choice) { font-size: var(--t-s); }
 .grow { flex: 1 1 200px; min-width: 0; }
-input[type=text], input[type=number], select, textarea { font: inherit; padding: 5px 7px; border: 1px solid var(--line); border-radius: 5px; background: #fff; color: var(--ink); max-width: 100%; }
-input[type=number] { width: 7em; }
-textarea { width: 100%; min-height: 4em; }
-button { font: inherit; padding: 5px 11px; border: 1px solid var(--line); background: #fff; border-radius: 5px; cursor: pointer; color: var(--ink); }
-button:hover { background: var(--soft); }
-button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
-button.primary:hover { filter: brightness(1.08); }
-button.danger { color: var(--bad); }
-button.link { border: none; background: none; color: var(--accent); padding: 2px 4px; }
-button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid #7bb3f0; outline-offset: 1px; }
-.badge { display: inline-block; font-size: 12px; padding: 1px 7px; border-radius: 10px; background: var(--soft); color: var(--muted); margin-left: 6px; white-space: nowrap; }
-.badge.warn { background: #fff1e6; color: var(--warn); }
-.badge.bad { background: #fde8e8; color: var(--bad); }
-.badge.ok { background: #e6f4ea; color: var(--ok); }
-.card { border: 1px solid var(--line); border-radius: 7px; padding: 8px 10px; margin: 8px 0; background: #fff; }
-.card.flag-anders { border-left: 4px solid var(--warn); }
-.card.flag-unsicher { border-left: 4px solid #b58900; }
-.card.flag-ok { border-left: 4px solid var(--ok); }
-.checks { display: flex; flex-wrap: wrap; gap: 4px 14px; }
-.checks label { white-space: nowrap; }
-table.grid { border-collapse: collapse; width: 100%; }
-table.grid th, table.grid td { border: 1px solid var(--line); padding: 4px 6px; text-align: left; vertical-align: top; }
-table.grid th { background: #f0f3f6; font-size: 13px; }
-table.grid td select { width: 100%; }
-.scroll { overflow-x: auto; }
-.lead { background: #e6f4ea; }
-.dup { background: #fde8e8; }
-.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; }
-details > summary { cursor: pointer; color: var(--accent); }
-.toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: #1d232a; color: #fff; padding: 9px 16px; border-radius: 6px; max-width: 90vw; z-index: 10; }
-.seq li { margin: 4px 0; }
+.checks { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-4); margin: var(--sp-1) 0 var(--sp-2); }
+textarea { min-height: 5em; }
+button.link { border: 0; background: none; padding: 2px var(--sp-1); cursor: pointer; color: var(--accent);
+  font: inherit; text-decoration: underline; text-underline-offset: 0.18em; }
+.chip + .chip, h2 > .chip, summary > .chip, td > .chip { margin-left: var(--sp-1); }
+details > div { margin: var(--sp-2) 0; }
+
+/* Lists of like things: ruled rows, columns under one head. The mark on the left edge
+ * carries the client's answer, always next to the chip that says it in words. */
+.liste { margin: var(--sp-2) 0 var(--sp-3); }
+.liste-kopf, .item { border-left: 3px solid transparent; border-bottom: 1px solid var(--rule); padding: var(--row) 0 var(--row) var(--sp-2); }
+.liste > .item:first-child { border-top: 1px solid var(--rule); }
+.item { display: flex; flex-wrap: wrap; gap: var(--sp-1) var(--sp-2); align-items: center; }
+.item > .row { flex: 1 1 100%; margin: 0; }
+.item:not(.spalten) > select, .item:not(.spalten) > input { width: auto; }
+.spalten { display: grid; grid-template-columns: var(--cols); }
+.spalten.systeme { --cols: minmax(0, 3fr) 9em minmax(0, 4fr) minmax(0, 3fr) 7em; }
+.spalten.aufgaben { --cols: minmax(0, 4fr) minmax(0, 2fr) 9em minmax(0, 3fr) 7em; }
+.spalten > details, .spalten > .voll { grid-column: 1 / -1; }
+.liste-kopf { align-items: end; border-bottom: 2px solid var(--ink); color: var(--muted);
+  font: 600 calc(var(--t-s) * 0.92)/1.3 var(--f-ui); letter-spacing: 0.06em; text-transform: uppercase; }
+.item.flag-ok { border-left-color: var(--ok); }
+.item.flag-anders { border-left-color: var(--bad); }
+.item.flag-unsicher { border-left-color: var(--warn); }
+.item input, .item select, td input, td select { min-height: 36px; padding: 2px var(--sp-2); }
+.item .choice input { min-height: 0; padding: 0; }
+@media (pointer: coarse) { .item input, .item select, td input, td select { min-height: 44px; } }
+@media (max-width: 760px) {
+  .spalten { --cols: minmax(0, 1fr) minmax(0, 1fr) !important; }
+  .spalten > :first-child { grid-column: 1 / -1; }
+  .liste-kopf { display: none; }
+}
+
+/* Tables with controls in the cells. */
+td select { width: 100%; }
+td input[type=number] { width: 7em; text-align: right; font-family: var(--f-mono); }
+#matrix th, #matrix td { padding-inline: 2px; }
+#matrix select { padding-inline: var(--sp-1); }
+.lead { background: var(--ok-bg); }
+.dup { background: var(--bad-bg); }
+.seq li { margin: var(--sp-1) 0; }
 .seq li .row { margin: 0; }
 
-/* Client walkthrough */
-.walk { max-width: 680px; margin: 0 auto; padding: 16px; }
-.walk h1 { font-size: 22px; margin: 8px 0 4px; }
-.walk .intro { color: var(--muted); }
-.progress { height: 10px; background: #e3e8ee; border-radius: 5px; overflow: hidden; margin: 12px 0 4px; }
-.progress > div { height: 100%; background: var(--accent); transition: width .2s; }
-.walk .bigcard { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; margin: 14px 0; min-height: 220px; }
-.walk .kicker { color: var(--muted); font-size: 14px; }
-.walk .title { font-size: 21px; font-weight: 650; margin: 4px 0 8px; }
-.walk .answers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 16px; }
-.walk .answers button { padding: 14px 6px; font-size: 16px; border-width: 2px; }
-.walk .answers button[aria-pressed="true"] { border-color: var(--accent); background: var(--soft); font-weight: 700; }
-.walk .nav { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
-.walk .keys { color: var(--muted); font-size: 13px; }
+.toast { position: fixed; bottom: var(--sp-3); left: 50%; transform: translateX(-50%); max-width: 90vw; z-index: 10;
+  background: var(--ink); color: var(--paper); padding: var(--sp-2) var(--sp-3); border-radius: var(--r); font: 600 var(--t-s)/1.4 var(--f-ui); }
+.toast.bad { background: var(--bad); color: var(--sheet); }
+
+/* Client walkthrough: one card, one question. */
+.walk { max-width: 42rem; margin: 0 auto; padding: var(--sp-3) 16px var(--sp-6); }
+.progress { height: 8px; background: var(--sunk); overflow: hidden; margin: var(--sp-3) 0 var(--sp-1); }
+.progress > div { height: 100%; background: var(--s1); transition: width .2s; }
+.walk .card { padding: var(--sp-4); margin: var(--sp-3) 0; min-height: 220px; }
+.walk .title { font: 800 var(--t-xl)/1.15 var(--f-display); letter-spacing: -0.015em; margin: var(--sp-1) 0 var(--sp-2); }
+.walk textarea { margin-top: var(--sp-1); }
+.walk .frage { font: 600 var(--t-l)/1.3 var(--f-ui); margin: var(--sp-3) 0 0; }
+.walk .answers { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--sp-2); margin: var(--sp-3) 0; }
+.walk .answers .btn { min-height: 56px; border-width: 2px; font-size: var(--t-m); }
+.walk .answers .btn[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.walk .nav { display: flex; justify-content: space-between; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
 @media (max-width: 520px) { .walk .answers { grid-template-columns: 1fr; } }
 
 @media print {
-  body { background: #fff; }
-  .no-print, header.top, nav.tabs, .toast { display: none !important; }
-  main { padding: 0; max-width: none; }
-  section.panel { border: none; padding: 0; }
+  .no-print, .masthead, nav.tabs, .toast { display: none !important; }
+  .wrap { padding: 0; max-width: none; }
+  section.panel { border: 0; padding: 0; margin: 0; }
   @page { size: A4; margin: 15mm; }
 }
 </style>
@@ -935,39 +1179,64 @@ details > summary { cursor: pointer; color: var(--accent); }
   const CODES = { fuehrt: 'F', liest: 'L', kopie: 'K' };
   const SWIM_COLUMNS = 5;
 
+  // Colours and typefaces are the roles of the style in src/stil.css; the sizes are in pt
+  // because the report is made for A4.
   const REPORT_CSS = `
-.report { font: 10.5pt/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: #1d232a; }
-.report h1 { font-size: 18pt; margin: 0 0 .2em; }
-.report h2 { font-size: 13pt; margin: 1.4em 0 .4em; border-bottom: 1px solid #c9d1d9; padding-bottom: .15em; break-after: avoid; }
-.report h3 { font-size: 11pt; margin: 1em 0 .3em; break-after: avoid; }
-.report .meta { color: #57606a; margin: 0 0 1em; }
-.report table { width: 100%; max-width: 100%; border-collapse: collapse; table-layout: fixed; margin: .3em 0 .8em; break-inside: auto; }
-.report th, .report td { border: 1px solid #c9d1d9; padding: 3px 5px; vertical-align: top; text-align: left; overflow-wrap: anywhere; word-break: break-word; hyphens: auto; }
-.report th { background: #f0f3f6; font-weight: 600; }
+.report { font: 10.5pt/1.4 var(--f-body); color: var(--ink); }
+.report h1 { font: 800 18pt/1.1 var(--f-display); letter-spacing: -0.02em; margin: 0 0 .2em; }
+.report h2 { font: 800 13pt/1.2 var(--f-display); margin: 1.6em 0 .4em; border-top: 1px solid var(--ink); padding-top: .35em; break-after: avoid; }
+.report h3 { font: 700 10.5pt/1.2 var(--f-display); margin: 1.1em 0 .3em; break-after: avoid; }
+.report .meta { color: var(--muted); margin: 0 0 1em; }
+.report table { width: 100%; max-width: 100%; border-collapse: collapse; table-layout: fixed; margin: .3em 0 .8em; break-inside: auto; font: inherit; }
+.report th, .report td { border: 0; border-bottom: 1px solid var(--rule); padding: 3px 5px; vertical-align: top; text-align: left; overflow-wrap: anywhere; word-break: break-word; hyphens: auto; }
+.report th { font: 600 8pt/1.3 var(--f-ui); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); border-bottom: 2px solid var(--ink); vertical-align: bottom; }
 .report tr { break-inside: avoid; }
-.report .num { text-align: right; white-space: nowrap; }
-.report .c { text-align: center; }
-.report .tiles { display: flex; flex-wrap: wrap; gap: 8px; margin: .5em 0 1em; }
-.report .tile { border: 1px solid #c9d1d9; border-radius: 6px; padding: 6px 10px; min-width: 110px; }
-.report .tile b { display: block; font-size: 16pt; }
-.report .warn { color: #9a3412; }
-.report .bad { background: #fde8e8; }
-.report .lead { background: #e6f4ea; font-weight: 700; }
-.report .muted { color: #57606a; }
-.report .box { border: 1px solid #8c959f; border-radius: 4px; padding: 3px 5px; background: #fff; }
-.report .box.mb { border: 2px solid #b42318; background: #fff4f2; }
-.report .lane { font-weight: 600; background: #f6f8fa; }
+.report .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.report td.num, .report .key { font-family: var(--f-mono); }
+.report td.num { font-size: 9.5pt; }
+.report tfoot th { font: 700 10.5pt/1.4 var(--f-body); letter-spacing: 0; text-transform: none; color: var(--ink); border-top: 1px solid var(--ink); border-bottom: 0; }
+.report tfoot th.num { font-family: var(--f-mono); border-bottom: 3px double var(--ink); }
+.report .befunde { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: 0 20px; align-items: start; border-top: 1px solid var(--ink); border-bottom: 1px solid var(--rule); padding: .6em 0 .2em; margin: 0 0 1em; break-inside: avoid; }
+.report .key { display: block; font-size: 30pt; font-weight: 700; line-height: 1; letter-spacing: -0.04em; }
+.report .key + span { display: block; margin-top: .3em; color: var(--muted); }
+.report .befunde table { margin: 0 0 .4em; }
+.report .befunde tr:last-child td { border-bottom: 0; }
+.report .zeichen { width: 1.8em; font-weight: 700; }
+.report .ok { color: var(--ok); }
+.report .warn { color: var(--warn); }
+.report .schlecht { color: var(--bad); }
+.report .bad { background: var(--bad-bg); color: var(--bad); font-weight: 700; }
+.report .lead { background: var(--ok-bg); color: var(--ok); font-weight: 700; }
+.report .muted { color: var(--muted); }
+.report .swimlane th { letter-spacing: 0; text-transform: none; }
+.report .box { border: 1px solid var(--muted); border-radius: var(--r); padding: 3px 5px; background: var(--sheet); }
+.report .box + .box { margin-top: 3px; }
+.report .box.mb { border: 2px solid var(--bad); background: var(--bad-bg); }
+.report .lane { font-weight: 700; }
 .report ul { margin: .2em 0 .8em; padding-left: 1.3em; }
-.report .legend { font-size: 9pt; color: #57606a; }
-@media print { .report h2 { break-before: auto; } .report .tile { break-inside: avoid; } }
+.report .legend { font-size: 9pt; color: var(--muted); }
+@media (max-width: 520px) { .report .befunde { grid-template-columns: minmax(0, 1fr); } }
+@media print { .report h2 { break-before: auto; } }
 `;
 
   function names(state, ids) { return ids.map((id) => (SL.sysById(state, id) || {}).name || '?').join(', '); }
   const objName = (state, id) => (SL.objById(state, id) || {}).name || id;
   const sysName = (state, id) => (SL.sysById(state, id) || {}).name || '?';
 
-  function tile(n, label, bad) {
-    return `<div class="tile${bad && n ? ' warn' : ''}"><b>${esc(n)}</b>${esc(label)}</div>`;
+  // Summary first: the one figure, then each finding with its sign and count.
+  function befundZeile(n, label, sign, cls) {
+    return `<tr><td class="zeichen ${n ? cls : 'ok'}">${n ? sign : '✓'}</td><td>${esc(label)}</td><td class="num">${esc(n)}</td></tr>`;
+  }
+
+  function zusammenfassung(b) {
+    const key = b.aufwandSumme
+      ? `<b class="key">${esc(b.aufwandSumme)}</b><span>Minuten im Monat für Medienbrüche</span>`
+      : `<b class="key">${esc(b.medienbrueche.length)}</b><span>Medienbrüche</span>`;
+    return `<div class="befunde"><div>${key}</div><table><colgroup><col style="width:2.2em"><col><col style="width:4em"></colgroup><tbody>${
+      befundZeile(b.medienbrueche.length, 'Medienbrüche', '✗', 'schlecht')}${
+      befundZeile(b.doppelt.length, 'Datenobjekte mit doppelter Pflege', '✗', 'schlecht')}${
+      befundZeile(b.luecken.length, 'Datenobjekte ohne führendes System', '✗', 'schlecht')}${
+      befundZeile(b.offeneFragen.length, 'offene Fragen', '?', 'warn')}</tbody></table></div>`;
   }
 
   function list(items, empty) {
@@ -977,13 +1246,13 @@ details > summary { cursor: pointer; color: var(--accent); }
   function matrixTable(state) {
     const sys = SL.istSystems(state);
     if (!state.objects.length || !sys.length) return '<p class="muted">Noch keine Datenobjekte oder Systeme.</p>';
-    const head = sys.map((s, i) => `<th class="c" title="${esc(s.name)}">${i + 1}</th>`).join('');
+    const head = sys.map((s, i) => `<th title="${esc(s.name)}">${i + 1}</th>`).join('');
     const rows = state.objects.map((o) => {
       const st = SL.objectStatus(state, o.id);
       const flag = st === 'doppelt' ? ' <span class="warn">⚠ doppelte Pflege</span>' : st === 'luecke' ? ' <span class="warn">⚠ kein führendes System</span>' : '';
       const cells = sys.map((s) => {
         const v = SL.cell(state, o.id, s.id);
-        const cls = v === 'fuehrt' ? (st === 'doppelt' ? 'c bad' : 'c lead') : 'c';
+        const cls = v === 'fuehrt' ? (st === 'doppelt' ? 'bad' : 'lead') : '';
         return `<td class="${cls}">${CODES[v] || ''}</td>`;
       }).join('');
       return `<tr><td>${esc(o.name)}${flag}</td>${cells}</tr>`;
@@ -1053,7 +1322,7 @@ ${list([
     const hasZiel = SL.zielsysteme(state).length > 0;
     const mbRows = b.medienbrueche.map((f) => `<tr><td>${esc(objName(state, f.objectId))}</td><td>${esc(sysName(state, f.from))} → ${esc(sysName(state, f.to))}</td><td>${esc(SL.FLUSSARTEN[f.art])}</td><td>${esc(SL.HAEUFIGKEITEN[f.haeufigkeit] || '')}</td><td class="num">${f.aufwand ? esc(f.aufwand) : '–'}</td></tr>`).join('');
     const procs = fw.prozesse.map((p) => `<h3>${esc(p.name)}${p.modul ? ` <span class="muted">(Modul ${esc(p.modul)})</span>` : ''}</h3>${swimlaneTables(state, fw, p.id)}`).join('');
-    const sysRows = sys.map((s, i) => `<tr><td class="c">${i + 1}</td><td>${esc(s.name)}</td><td>${esc(SL.ARTEN[s.art])}</td><td>${esc(s.zweck)}</td><td>${esc(s.rollen.join(', '))}</td></tr>`).join('');
+    const sysRows = sys.map((s, i) => `<tr><td>${i + 1}</td><td>${esc(s.name)}</td><td>${esc(SL.ARTEN[s.art])}</td><td>${esc(s.zweck)}</td><td>${esc(s.rollen.join(', '))}</td></tr>`).join('');
     const taskRows = state.tasks.filter((t) => !(SL.sysById(state, t.systemId) || {}).zielsystem).map((t) => {
       const p = SL.inFramework(t, fw) ? fw.prozess(t.prozess) : null;
       const steps = t.schritte.length ? `<div class="muted">${t.schritte.map((s) => esc(s.name)).join(' → ')}</div>` : '';
@@ -1063,7 +1332,7 @@ ${list([
 <h1>Software-Landkarte${state.meta.betrieb ? `: ${esc(state.meta.betrieb)}` : ''}</h1>
 <p class="meta">Stand ${esc(state.meta.geaendert)} · Fassung ${esc(state.meta.version)}${state.meta.module.length ? ` · Module: ${esc(state.meta.module.join(', '))}` : ''}</p>
 <h2>Befunde</h2>
-<div class="tiles">${tile(b.medienbrueche.length, 'Medienbrüche', true)}${tile(b.doppelt.length, 'doppelte Pflege', true)}${tile(b.luecken.length, 'ohne führendes System', true)}${tile(b.offeneFragen.length, 'offene Fragen', true)}${b.aufwandSumme ? tile(b.aufwandSumme, 'Minuten im Monat für Medienbrüche', true) : ''}</div>
+${zusammenfassung(b)}
 <h3>Medienbrüche</h3>
 ${b.medienbrueche.length ? `<table><colgroup><col style="width:22%"><col style="width:30%"><col style="width:20%"><col style="width:14%"><col style="width:14%"></colgroup><thead><tr><th>Datenobjekt</th><th>Weg</th><th>Art</th><th>Häufigkeit</th><th class="num">Min./Monat</th></tr></thead><tbody>${mbRows}</tbody>${b.aufwandSumme ? `<tfoot><tr><th colspan="4">Summe</th><th class="num">${esc(b.aufwandSumme)}</th></tr></tfoot>` : ''}</table>` : '<p class="muted">Keine.</p>'}
 <h3>Doppelte Pflege</h3>
@@ -1087,14 +1356,15 @@ ${taskRows ? `<table><colgroup><col style="width:34%"><col style="width:20%"><co
 </div>`;
   }
 
-  /** A standalone file: no scripts, no network (software-landkarte.r.lokal). */
-  function reportDocument(state, fw) {
+  /** A standalone file: no scripts, no network (software-landkarte.r.lokal). `tokens` is
+   * the style's variables (the page's #sl-stil); the report is always drawn light. */
+  function reportDocument(state, fw, tokens) {
     return `<!DOCTYPE html>
-<html lang="de"><head><meta charset="utf-8">
+<html lang="de" data-theme="light"><head><meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Bericht Software-Landkarte${state.meta.betrieb ? ` – ${esc(state.meta.betrieb)}` : ''}</title>
-<style>@page { size: A4; margin: 15mm; } body { margin: 0 auto; max-width: 180mm; padding: 10mm 0; background: #fff; }${REPORT_CSS}</style>
+<style>${tokens || ''}@page { size: A4; margin: 15mm; } body { margin: 0 auto; max-width: 180mm; padding: 10mm 0; background: var(--sheet); }${REPORT_CSS}</style>
 </head><body>${render(state, fw)}</body></html>`;
   }
 
@@ -1126,16 +1396,20 @@ ${taskRows ? `<table><colgroup><col style="width:34%"><col style="width:20%"><co
   function h(tag, props, ...kids) {
     const el = document.createElement(tag);
     let value;
+    let cls = '';
     for (const [k, v] of Object.entries(props || {})) {
       if (v == null || v === false) continue;
       if (k.startsWith('on')) el.addEventListener(k.slice(2).toLowerCase(), v);
-      else if (k === 'class') el.className = v;
+      else if (k === 'class') cls = v;
       else if (k === 'value') value = v;
       else if (k === 'checked' || k === 'disabled' || k === 'selected') el[k] = !!v;
       else if (k === 'k') el.dataset.k = v;
       else if (k === 'html') el.innerHTML = v; // only for strings built by SL.report, which escapes
       else el.setAttribute(k, v === true ? '' : v);
     }
+    // Every button is a house-style button, except tabs and buttons that read as links.
+    if (tag === 'button' && !(props && props.role) && !/\blink\b/.test(cls)) cls = `btn ${cls}`.trim();
+    if (cls) el.className = cls;
     for (const kid of kids.flat(Infinity)) {
       if (kid == null || kid === false) continue;
       el.append(kid instanceof Node ? kid : document.createTextNode(String(kid)));
@@ -1149,10 +1423,14 @@ ${taskRows ? `<table><colgroup><col style="width:34%"><col style="width:20%"><co
     ...Object.entries(map).filter(([k]) => k !== '').map(([k, label]) => h('option', { value: k, selected: k === current }, label)),
   ];
 
-  function toast(msg) {
-    const t = h('div', { class: 'toast', role: 'status' }, msg);
+  // A labelled field: the label says what is asked, the placeholder is only an example.
+  const feld = (text, control, cls) => h('label', { class: cls == null ? 'grow' : cls }, text, control);
+  const anzahl = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+
+  function toast(msg, bad) {
+    const t = h('div', { class: bad ? 'toast bad' : 'toast', role: bad ? 'alert' : 'status' }, msg);
     document.body.append(t);
-    setTimeout(() => t.remove(), 4000);
+    setTimeout(() => t.remove(), bad ? 8000 : 4000);
   }
 
   function download(name, text, type) {
@@ -1169,7 +1447,7 @@ ${taskRows ? `<table><colgroup><col style="width:34%"><col style="width:20%"><co
       const f = input.files[0];
       if (!f) return;
       const r = new FileReader();
-      r.onload = () => { try { onText(String(r.result)); } catch (e) { toast(e.message); } input.remove(); };
+      r.onload = () => { try { onText(String(r.result)); } catch (e) { toast(e.message, true); } input.remove(); };
       r.readAsText(f);
     });
     document.body.append(input);
@@ -1208,7 +1486,7 @@ ${taskRows ? `<table><colgroup><col style="width:34%"><col style="width:20%"><co
       if (pending) return;
       pending = setTimeout(() => { pending = null; render(); }, 0);
     }
-    const act = (fn) => (ev) => { try { fn(ev); commit(); } catch (e) { toast(e.message); } };
+    const act = (fn) => (ev) => { try { fn(ev); commit(); } catch (e) { toast(e.message, true); } };
     const fileBase = () => `${slug(state.meta.betrieb)}-${SL.today()}`;
 
     const TABS = [
@@ -1222,20 +1500,82 @@ ${taskRows ? `<table><colgroup><col style="width:34%"><col style="width:20%"><co
         systeme: SL.istSystems(state).length, aufgaben: state.tasks.length, daten: state.objects.length, fluesse: state.flows.length,
       };
       const view = { betrieb, systeme, aufgaben, daten, fluesse, prozesse, zielbild, durchgang, bericht }[tab]();
-      app.replaceChildren(
-        h('header', { class: 'top' },
-          h('h1', {}, 'Software-Landkarte'),
-          h('span', { class: 'sub' }, state.meta.betrieb || 'neuer Betrieb', ` · Fassung ${state.meta.version} · Stand ${state.meta.geaendert}`)),
+      app.replaceChildren(h('div', { class: 'wrap' },
+        h('header', { class: 'masthead' },
+          h('div', { class: 'label' },
+            h('span', {}, state.meta.betrieb ? 'Software-Landkarte' : 'Software-Landkarte · neuer Betrieb'),
+            h('span', {}, `Fassung ${state.meta.version} · Stand ${state.meta.geaendert}`)),
+          h('h1', {}, state.meta.betrieb || 'Software-Landkarte')),
         h('nav', { class: 'tabs', role: 'tablist' }, TABS.map(([id, label]) => h('button', {
           role: 'tab', 'aria-selected': String(tab === id), 'data-tab': id,
           onclick: () => { tab = id; render(); window.scrollTo(0, 0); },
         }, label, counts[id] != null ? h('span', { class: 'count' }, counts[id]) : null))),
-        h('main', {}, view),
-      );
+        h('main', {}, lage(), view)));
       if (focusKey) {
         const el = app.querySelector(`[data-k="${CSS.escape(focusKey)}"]`);
         if (el) el.focus();
       }
+    }
+
+    // --- Summary first: the one figure of the view and what it means (house style).
+
+    function lage() {
+      const make = (zahl, einheit, satz) => h('div', { class: 'summary grid lage no-print' },
+        h('div', {}, h('span', { class: 'key' }, zahl, ' ', h('small', {}, einheit))),
+        h('div', {}, h('p', {}, satz)));
+      const f = fw();
+      const b = SL.befunde(state, f);
+      const ist = SL.istSystems(state);
+      const tasks = state.tasks.filter((t) => !(SL.sysById(state, t.systemId) || {}).zielsystem);
+      const offen = b.doppelt.length + b.luecken.length;
+      if (tab === 'betrieb') {
+        return make(ist.length, ist.length === 1 ? 'System' : 'Systeme', ist.length
+          ? `${anzahl(tasks.length, 'Aufgabe', 'Aufgaben')}, ${anzahl(state.objects.length, 'Datenobjekt', 'Datenobjekte')} und ${anzahl(state.flows.length, 'Fluss', 'Flüsse')} erfasst. Befunde: ${anzahl(b.medienbrueche.length, 'Medienbruch', 'Medienbrüche')}, ${anzahl(offen, 'Datenobjekt', 'Datenobjekte')} ohne eindeutig führendes System.`
+          : 'Noch nichts erfasst. Benennen Sie den Betrieb, wählen Sie die Branchenmodule und legen Sie dann im Reiter Systeme das erste System an.');
+      }
+      if (tab === 'systeme') {
+        const ziel = SL.zielsysteme(state).length;
+        return make(ist.length, ist.length === 1 ? 'System' : 'Systeme', ist.length
+          ? `Im Betrieb heute im Einsatz. ${ziel ? `Dazu ${anzahl(ziel, 'Zielsystem', 'Zielsysteme')} für die Umstellung.` : 'Noch kein Zielsystem.'}`
+          : 'Noch keine Systeme. Auch Excel-Listen, Papier und Postfächer zählen: Fügen Sie das erste unten hinzu.');
+      }
+      if (tab === 'aufgaben' && ist.length) {
+        const mb = tasks.filter((t) => SL.taskBreaks(state, t).length).length;
+        return make(tasks.length, tasks.length === 1 ? 'Aufgabe' : 'Aufgaben', tasks.length
+          ? `Davon ${mb} mit Medienbruch und ${b.ohneProzess.length} ohne Prozess.`
+          : 'Noch keine Aufgaben. Wählen Sie je System die typischen Aufgaben an oder legen Sie eigene an.');
+      }
+      if (tab === 'daten') {
+        if (!state.objects.length) return make(0, 'Datenobjekte', 'Noch keine Datenobjekte. Wählen Sie unten aus dem Katalog oder legen Sie ein eigenes an.');
+        return make(offen, `von ${state.objects.length} Datenobjekten ohne eindeutig führendes System`, offen
+          ? `${b.doppelt.length} mit doppelter Pflege, ${b.luecken.length} ohne führendes System. Ziel: je Datenobjekt genau ein führendes System.`
+          : 'Jedes Datenobjekt hat genau ein führendes System.');
+      }
+      if (tab === 'fluesse') {
+        const sugg = SL.suggestFlows(state).length;
+        return make(b.medienbrueche.length, b.medienbrueche.length === 1 ? 'Medienbruch' : 'Medienbrüche',
+          `Unter ${anzahl(state.flows.length, 'Datenfluss', 'Datenflüssen')}${b.aufwandSumme ? `, zusammen ${b.aufwandSumme} Min./Monat` : ''}.${sugg ? ` ${anzahl(sugg, 'vorgeschlagener Fluss wartet', 'vorgeschlagene Flüsse warten')} auf Übernahme.` : ''}`);
+      }
+      if (tab === 'prozesse') {
+        return make(b.ohneProzess.length, b.ohneProzess.length === 1 ? 'Aufgabe ohne Prozess' : 'Aufgaben ohne Prozess',
+          `Von ${anzahl(tasks.length, 'Aufgabe', 'Aufgaben')} in ${anzahl(f.prozesse.length, 'Prozess', 'Prozessen')}. ${b.ohneProzess.length ? 'Ordnen Sie sie unten zu oder lassen Sie sie als Kandidaten für ein neues Branchenmodul stehen.' : 'Jede Aufgabe gehört zu einem Prozess.'}`);
+      }
+      if (tab === 'zielbild' && SL.zielsysteme(state).length) {
+        const u = SL.umstellungsliste(state);
+        const k = u.offen.aufgaben.length + u.offen.datenobjekte.length;
+        return make(k, k === 1 ? 'offene Entscheidung' : 'offene Entscheidungen', k
+          ? `${anzahl(u.offen.aufgaben.length, 'Aufgabe', 'Aufgaben')} und ${anzahl(u.offen.datenobjekte.length, 'Datenobjekt', 'Datenobjekte')} sind noch nicht entschieden.`
+          : 'Das Zielbild ist vollständig entschieden.');
+      }
+      if (tab === 'durchgang') {
+        const d = SL.durchgangBefunde(state);
+        const k = d.anders.length + d.unsicher.length + d.ergaenzungen.length;
+        const da = state.durchgang && state.durchgang.eingelesen;
+        return make(k, k === 1 ? 'offene Rückmeldung' : 'offene Rückmeldungen', da
+          ? `Ergebnis eingelesen am ${state.durchgang.eingelesen}: ${d.anders.length} anders, ${d.unsicher.length} unsicher, ${anzahl(d.ergaenzungen.length, 'Ergänzung', 'Ergänzungen')}.`
+          : 'Noch kein Ergebnis des Mandanten eingelesen.');
+      }
+      return null;
     }
 
     // --- Betrieb
@@ -1244,22 +1584,21 @@ ${taskRows ? `<table><colgroup><col style="width:34%"><col style="width:20%"><co
       return [
         h('section', { class: 'panel' },
           h('h2', {}, 'Betrieb'),
-          h('div', { class: 'row' },
-            h('label', { for: 'betrieb' }, 'Name des Betriebs'),
-            h('input', { id: 'betrieb', k: 'betrieb', type: 'text', class: 'grow', value: state.meta.betrieb,
-              onchange: act((e) => { state.meta.betrieb = e.target.value.trim(); }) })),
+          h('div', { class: 'row felder' },
+            feld('Name des Betriebs', h('input', { id: 'betrieb', k: 'betrieb', type: 'text', value: state.meta.betrieb,
+              onchange: act((e) => { state.meta.betrieb = e.target.value.trim(); }) }))),
           h('p', { class: 'hint' }, 'Personen werden als Rollen erfasst (Buchhaltung, Inhaber), nicht mit Namen. Die Landkarte bleibt auf diesem Gerät, bis Sie sie speichern und weitergeben.')),
         h('section', { class: 'panel' },
           h('h2', {}, 'Branchenmodule'),
           h('p', { class: 'hint' }, 'Der Kern (Einkauf, Auftrag, Personal, Buchhaltung) gilt immer. Module bringen Prozesse, Schritte, Datenobjekte und Software ihrer Branche mit; mehrere sind möglich.'),
-          DATA.module.map((m) => h('div', { class: 'row' }, h('label', {},
+          DATA.module.map((m) => h('div', { class: 'row' }, h('label', { class: 'choice' },
             h('input', { type: 'checkbox', 'data-modul': m.id, checked: state.meta.module.includes(m.id),
               onchange: act((e) => {
                 const set = new Set(state.meta.module);
                 if (e.target.checked) set.add(m.id); else set.delete(m.id);
                 state.meta.module = DATA.module.map((x) => x.id).filter((id) => set.has(id));
               }) }),
-            ' ', h('b', {}, m.name), m.beschreibung ? ` – ${m.beschreibung}` : '')))),
+            h('span', {}, h('b', {}, m.name), m.beschreibung ? ` – ${m.beschreibung}` : ''))))),
         h('section', { class: 'panel' },
           h('h2', {}, 'Datei'),
           h('div', { class: 'row' },
@@ -1270,7 +1609,7 @@ ${taskRows ? `<table><colgroup><col style="width:34%"><col style="width:20%"><co
             h('button', { id: 'new-map', onclick: () => { if (confirm('Neue, leere Landkarte beginnen? Der jetzige Stand geht verloren, wenn er nicht gespeichert ist.')) { state = SL.emptyState(); commit(); } } }, 'Neue Landkarte'),
             h('button', { id: 'load-example', onclick: () => { if (!state.systems.length || confirm('Den erfundenen Beispielbetrieb laden? Der jetzige Stand wird ersetzt.')) { state = SL.normalize(SL.clone(DATA.beispiel)); commit(); } } }, 'Beispielbetrieb laden')),
           h('p', { class: 'hint' }, 'Der Stand wird in diesem Browser automatisch gesichert. Die gespeicherte Datei (.landkarte.json) lässt sich jederzeit wieder öffnen, auch als Ausgangspunkt nach einer Umstellung.'),
-          state.meta.vorgaenger.length ? h('div', {}, h('h3', {}, 'Frühere Fassungen'), h('ul', {}, state.meta.vorgaenger.map((v) =>
+          state.meta.vorgaenger.length ? h('details', {}, h('summary', {}, `Frühere Fassungen (${state.meta.vorgaenger.length})`), h('ul', {}, state.meta.vorgaenger.map((v) =>
             h('li', {}, `Fassung ${v.version} bis ${v.bis}: ${v.systeme.length} Systeme`, v.abgeschaltet.length ? `, abgeschaltet: ${v.abgeschaltet.join(', ')}` : ''))))
             : null),
       ];
@@ -1281,7 +1620,7 @@ ${taskRows ? `<table><colgroup><col style="width:34%"><col style="width:20%"><co
     function catalogSelect(id, filter) {
       const groups = {};
       for (const sw of cat().software.filter(filter || (() => true))) (groups[sw.kategorie] = groups[sw.kategorie] || []).push(sw);
-      return h('select', { id, class: 'grow' }, h('option', { value: '' }, '– aus dem Katalog wählen –'),
+      return h('select', { id }, h('option', { value: '' }, '– aus dem Katalog wählen –'),
         Object.entries(groups).map(([g, list]) => h('optgroup', { label: g }, list.map((sw) => h('option', { value: sw.id }, sw.name)))));
     }
 
@@ -1293,7 +1632,7 @@ ${taskRows ? `<table><colgroup><col style="width:34%"><col style="width:20%"><co
       if (!item.durchgang) return null;
       const d = item.durchgang;
       const cls = d.wert === 'ok' ? 'ok' : d.wert === 'anders' ? 'bad' : 'warn';
-      return h('span', { class: `badge ${cls}`, title: d.text || '' }, `Mandant: ${SL.ANTWORTEN[d.wert]}${d.text ? ` – ${d.text}` : ''}${d.erledigt ? ' (erledigt)' : ''}`);
+      return h('span', { class: `chip ${cls}`, title: d.text || '' }, `Mandant: ${SL.ANTWORTEN[d.wert]}${d.text ? ` – ${d.text}` : ''}${d.erledigt ? ' (erledigt)' : ''}`);
     }
 
     function systeme() {
@@ -1302,30 +1641,29 @@ ${taskRows ? `<table><colgroup><col style="width:34%"><col style="width:20%"><co
         rolesList(),
         h('section', { class: 'panel' },
           h('h2', {}, 'System hinzufügen'),
-          h('div', { class: 'row' }, catalogSelect('cat-system'),
+          h('div', { class: 'row felder' }, feld('System aus dem Katalog', catalogSelect('cat-system')),
             h('button', { class: 'primary', id: 'add-cat-system', onclick: act(() => {
               const v = document.getElementById('cat-system').value;
               if (!v) throw new Error('Bitte erst ein System aus dem Katalog wählen.');
               SL.addSystemFromCatalog(state, cat(), v, fw());
             }) }, 'Aus Katalog hinzufügen')),
           h('p', { class: 'hint' }, 'Mit einem Katalogsystem kommen seine typischen Aufgaben; im Reiter Aufgaben lassen sie sich einzeln ab- und anwählen.'),
-          h('div', { class: 'row' },
-            h('input', { type: 'text', id: 'free-system', class: 'grow', placeholder: 'Eigenes System, z. B. „Preisliste Excel“ oder „Ordner Lieferscheine“', oninput: (e) => { free.name = e.target.value; } }),
-            h('select', { id: 'free-system-art', onchange: (e) => { free.art = e.target.value; } }, options(SL.ARTEN, 'lokal')),
+          h('div', { class: 'row felder' },
+            feld('Eigenes System', h('input', { type: 'text', id: 'free-system', placeholder: 'z. B. „Preisliste Excel“ oder „Ordner Lieferscheine“', oninput: (e) => { free.name = e.target.value; } })),
+            feld('Art', h('select', { id: 'free-system-art', onchange: (e) => { free.art = e.target.value; } }, options(SL.ARTEN, 'lokal')), ''),
             h('button', { id: 'add-free-system', onclick: act(() => SL.addSystem(state, free)) }, 'Anlegen'))),
         h('section', { class: 'panel' },
           h('h2', {}, `Systeme (${state.systems.length})`),
-          state.systems.length ? null : h('p', { class: 'hint' }, 'Noch keine Systeme. Auch Excel-Listen, Papier und Postfächer zählen.'),
-          state.systems.map((s) => h('div', { class: `card${s.durchgang ? ` flag-${s.durchgang.wert}` : ''}`, 'data-system': s.id },
-            h('div', { class: 'row' },
-              h('input', { type: 'text', k: `sys-name-${s.id}`, class: 'grow', value: s.name, 'aria-label': 'Name', onchange: act((e) => SL.updateSystem(state, s.id, { name: e.target.value.trim() || s.name })) }),
+          state.systems.length ? h('div', { class: 'liste' },
+            h('div', { class: 'liste-kopf spalten systeme', 'aria-hidden': 'true' }, ['Name', 'Art', 'Zweck', 'Rollen', ''].map((x) => h('span', {}, x))),
+            state.systems.map((s) => h('div', { class: `item spalten systeme${s.durchgang ? ` flag-${s.durchgang.wert}` : ''}`, 'data-system': s.id },
+              h('input', { type: 'text', k: `sys-name-${s.id}`, value: s.name, 'aria-label': 'Name', onchange: act((e) => SL.updateSystem(state, s.id, { name: e.target.value.trim() || s.name })) }),
               h('select', { k: `sys-art-${s.id}`, 'aria-label': 'Art', onchange: act((e) => SL.updateSystem(state, s.id, { art: e.target.value })) }, options(SL.ARTEN, s.art)),
-              s.zielsystem ? h('span', { class: 'badge ok' }, 'Zielsystem') : null,
-              durchgangBadge(s),
-              h('button', { class: 'danger', onclick: act(() => { if (confirm(`„${s.name}“ mit allen Aufgaben und Flüssen entfernen?`)) SL.removeSystem(state, s.id); }) }, 'Entfernen')),
-            h('div', { class: 'row' },
-              h('input', { type: 'text', k: `sys-zweck-${s.id}`, class: 'grow', value: s.zweck, placeholder: 'Zweck in einem Satz', 'aria-label': 'Zweck', onchange: act((e) => SL.updateSystem(state, s.id, { zweck: e.target.value })) }),
-              h('input', { type: 'text', k: `sys-rollen-${s.id}`, class: 'grow', list: 'rollen', value: s.rollen.join(', '), placeholder: 'Rollen, mit Komma getrennt', 'aria-label': 'Rollen', onchange: act((e) => SL.updateSystem(state, s.id, { rollen: e.target.value.split(',').map((x) => x.trim()).filter(Boolean) })) }))))),
+              h('input', { type: 'text', k: `sys-zweck-${s.id}`, value: s.zweck, placeholder: 'Zweck in einem Satz', 'aria-label': 'Zweck', onchange: act((e) => SL.updateSystem(state, s.id, { zweck: e.target.value })) }),
+              h('input', { type: 'text', k: `sys-rollen-${s.id}`, list: 'rollen', value: s.rollen.join(', '), placeholder: 'mit Komma getrennt', 'aria-label': 'Rollen', onchange: act((e) => SL.updateSystem(state, s.id, { rollen: e.target.value.split(',').map((x) => x.trim()).filter(Boolean) })) }),
+              h('button', { class: 'danger', 'aria-label': `System ${s.name} entfernen`, onclick: act(() => { if (confirm(`„${s.name}“ mit allen Aufgaben und Flüssen entfernen?`)) SL.removeSystem(state, s.id); }) }, 'Entfernen'),
+              s.zielsystem || s.durchgang ? h('div', { class: 'voll' }, s.zielsystem ? h('span', { class: 'chip ok' }, 'Zielsystem') : null, durchgangBadge(s)) : null)))
+            : h('p', { class: 'hint' }, 'Hier erscheinen die Systeme des Betriebs, sobald Sie oben das erste hinzufügen.')),
       ];
     }
 
@@ -1346,7 +1684,7 @@ ${taskRows ? `<table><colgroup><col style="width:34%"><col style="width:20%"><co
 
     function objectChecks(t, field) {
       if (!state.objects.length) return h('span', { class: 'hint' }, 'Noch keine Datenobjekte (Reiter Daten).');
-      return h('div', { class: 'checks' }, state.objects.map((o) => h('label', {},
+      return h('div', { class: 'checks' }, state.objects.map((o) => h('label', { class: 'choice' },
         h('input', { type: 'checkbox', checked: t[field].includes(o.id), onchange: act((e) => {
           const set = new Set(t[field]);
           if (e.target.checked) set.add(o.id); else set.delete(o.id);
@@ -1358,23 +1696,21 @@ ${taskRows ? `<table><colgroup><col style="width:34%"><col style="width:20%"><co
       const breaks = SL.taskBreaks(state, t);
       const hint = SL.needsSteps(state, t);
       let stepName = '';
-      return h('div', { class: `card${t.durchgang ? ` flag-${t.durchgang.wert}` : ''}`, 'data-task': t.id },
-        h('div', { class: 'row' },
-          h('input', { type: 'text', k: `task-name-${t.id}`, class: 'grow', value: t.name, 'aria-label': 'Bezeichnung', onchange: act((e) => SL.updateTask(state, t.id, { name: e.target.value.trim() || t.name })) }),
-          h('input', { type: 'text', k: `task-rolle-${t.id}`, list: 'rollen', value: t.rolle, placeholder: 'Rolle', 'aria-label': 'Rolle', size: 12, onchange: act((e) => SL.updateTask(state, t.id, { rolle: e.target.value.trim() })) }),
+      return h('div', { class: `item spalten aufgaben${t.durchgang ? ` flag-${t.durchgang.wert}` : ''}`, 'data-task': t.id },
+          h('input', { type: 'text', k: `task-name-${t.id}`, value: t.name, 'aria-label': 'Bezeichnung', onchange: act((e) => SL.updateTask(state, t.id, { name: e.target.value.trim() || t.name })) }),
+          h('input', { type: 'text', k: `task-rolle-${t.id}`, list: 'rollen', value: t.rolle, 'aria-label': 'Rolle', onchange: act((e) => SL.updateTask(state, t.id, { rolle: e.target.value.trim() })) }),
           h('select', { k: `task-hf-${t.id}`, 'aria-label': 'Häufigkeit', onchange: act((e) => SL.updateTask(state, t.id, { haeufigkeit: e.target.value })) }, options(SL.HAEUFIGKEITEN, t.haeufigkeit)),
           processSelect(t, f, `task-proc-${t.id}`),
-          breaks.length ? h('span', { class: 'badge bad' }, `Medienbruch (${breaks.length})`) : null,
-          durchgangBadge(t),
-          h('button', { class: 'danger', 'aria-label': `Aufgabe ${t.name} entfernen`, onclick: act(() => SL.removeTask(state, t.id)) }, '×')),
+          h('button', { class: 'danger', 'aria-label': `Aufgabe ${t.name} entfernen`, onclick: act(() => SL.removeTask(state, t.id)) }, 'Entfernen'),
+          breaks.length || t.durchgang ? h('div', { class: 'voll' }, breaks.length ? h('span', { class: 'chip bad' }, `✗ Medienbruch (${breaks.length})`) : null, durchgangBadge(t)) : null,
         h('details', {},
-          h('summary', {}, `Daten und Schritte${t.schritte.length ? ` (${t.schritte.length} Schritte)` : ''}`, hint ? h('span', { class: 'badge warn' }, 'Zerlegen empfohlen') : null),
+          h('summary', {}, `Daten und Schritte${t.schritte.length ? ` (${t.schritte.length} Schritte)` : ''}`, hint ? h('span', { class: 'chip warn' }, '? Zerlegen empfohlen') : null),
           h('div', {}, h('b', {}, 'Liest: '), objectChecks(t, 'liest')),
           h('div', {}, h('b', {}, 'Schreibt: '), objectChecks(t, 'schreibt')),
           h('div', {}, h('b', {}, 'Schritte '), h('span', { class: 'hint' }, 'nur, wo ein Medienbruch oder doppelte Pflege genauer angesehen werden muss'),
             h('ol', {}, t.schritte.map((s) => h('li', {}, s.name, ' ', h('button', { class: 'link', onclick: act(() => SL.removeStep(state, t.id, s.id)) }, 'entfernen')))),
-            h('div', { class: 'row' },
-              h('input', { type: 'text', class: 'grow', placeholder: 'Schritt, z. B. „Preis aus der Excel-Liste abtippen“', 'data-step-input': t.id, oninput: (e) => { stepName = e.target.value; } }),
+            h('div', { class: 'row felder' },
+              feld('Neuer Schritt', h('input', { type: 'text', placeholder: 'z. B. „Preis aus der Excel-Liste abtippen“', 'data-step-input': t.id, oninput: (e) => { stepName = e.target.value; } })),
               h('button', { 'data-add-step': t.id, onclick: act(() => SL.addStep(state, t.id, stepName)) }, 'Schritt hinzufügen')))));
     }
 
@@ -1388,15 +1724,17 @@ ${taskRows ? `<table><colgroup><col style="width:34%"><col style="width:20%"><co
         const tasks = state.tasks.filter((t) => t.systemId === s.id);
         let name = '';
         return h('section', { class: 'panel', 'data-system-tasks': s.id },
-          h('h2', {}, s.name, h('span', { class: 'badge' }, SL.ARTEN[s.art])),
+          h('h2', {}, s.name, h('span', { class: 'chip' }, SL.ARTEN[s.art])),
           proposals.length ? h('div', {}, h('h3', {}, 'Typische Aufgaben aus dem Katalog'),
-            h('div', { class: 'checks' }, proposals.map((p) => h('label', {},
+            h('div', { class: 'checks' }, proposals.map((p) => h('label', { class: 'choice' },
               h('input', { type: 'checkbox', 'data-cat-task': `${s.id}/${p.id}`, checked: tasks.some((t) => t.catalogRef === `${s.catalogId}/${p.id}`),
                 onchange: act((e) => SL.toggleCatalogTask(state, c, s.id, p.id, e.target.checked, f)) }), ' ', p.name)))) : null,
           h('h3', {}, `Aufgaben (${tasks.length})`),
-          tasks.map((t) => taskCard(t, f)),
-          h('div', { class: 'row' },
-            h('input', { type: 'text', class: 'grow', placeholder: 'Eigene Aufgabe', 'data-free-task': s.id, oninput: (e) => { name = e.target.value; } }),
+          tasks.length ? h('div', { class: 'liste' },
+            h('div', { class: 'liste-kopf spalten aufgaben', 'aria-hidden': 'true' }, ['Bezeichnung', 'Rolle', 'Häufigkeit', 'Prozess und Schritt', ''].map((x) => h('span', {}, x))),
+            tasks.map((t) => taskCard(t, f))) : null,
+          h('div', { class: 'row felder' },
+            feld('Eigene Aufgabe', h('input', { type: 'text', 'data-free-task': s.id, oninput: (e) => { name = e.target.value; } })),
             h('button', { 'data-add-task': s.id, onclick: act(() => SL.addTask(state, { name, systemId: s.id }, f)) }, 'Aufgabe anlegen')));
       })];
     }
@@ -1407,22 +1745,22 @@ ${taskRows ? `<table><colgroup><col style="width:34%"><col style="width:20%"><co
       const c = cat();
       const sys = SL.istSystems(state);
       const free = { name: '', art: 'stamm' };
-      const status = (st) => (st === 'doppelt' ? h('span', { class: 'badge bad' }, 'doppelte Pflege') : st === 'luecke' ? h('span', { class: 'badge warn' }, 'kein führendes System') : null);
+      const status = (st) => (st === 'doppelt' ? h('span', { class: 'chip bad' }, '✗ doppelte Pflege') : st === 'luecke' ? h('span', { class: 'chip warn' }, '? kein führendes System') : h('span', { class: 'chip ok' }, '✓'));
       return [
         h('section', { class: 'panel' },
           h('h2', {}, 'Datenobjekte'),
-          h('div', { class: 'checks' }, c.datenobjekte.map((o) => h('label', {},
+          h('div', { class: 'checks' }, c.datenobjekte.map((o) => h('label', { class: 'choice' },
             h('input', { type: 'checkbox', 'data-cat-object': o.id, checked: !!SL.objById(state, o.id), onchange: act((e) => {
               if (e.target.checked) SL.ensureObject(state, c, o.id); else SL.removeObject(state, o.id);
             }) }), ' ', o.name))),
-          h('div', { class: 'row' },
-            h('input', { type: 'text', id: 'free-object', class: 'grow', placeholder: 'Eigenes Datenobjekt', oninput: (e) => { free.name = e.target.value; } }),
-            h('select', { onchange: (e) => { free.art = e.target.value; } }, options(SL.OBJEKTARTEN, 'stamm')),
+          h('div', { class: 'row felder' },
+            feld('Eigenes Datenobjekt', h('input', { type: 'text', id: 'free-object', oninput: (e) => { free.name = e.target.value; } })),
+            feld('Art', h('select', { onchange: (e) => { free.art = e.target.value; } }, options(SL.OBJEKTARTEN, 'stamm')), ''),
             h('button', { id: 'add-object', onclick: act(() => SL.addObject(state, free)) }, 'Anlegen'))),
         h('section', { class: 'panel' },
           h('h2', {}, 'Landkarte: wo liegen die Daten?'),
           h('p', { class: 'hint' }, 'Je Datenobjekt genau ein führendes System: dort wird angelegt und geändert. Alle anderen lesen oder haben eine Kopie.'),
-          state.objects.length && sys.length ? h('div', { class: 'scroll' }, h('table', { class: 'grid', id: 'matrix' },
+          state.objects.length && sys.length ? h('div', { class: 'table' }, h('table', { id: 'matrix' },
             h('thead', {}, h('tr', {}, h('th', {}, 'Datenobjekt'), sys.map((s) => h('th', {}, s.name)), h('th', {}, 'Befund'))),
             h('tbody', {}, state.objects.map((o) => {
               const st = SL.objectStatus(state, o.id);
@@ -1453,34 +1791,34 @@ ${taskRows ? `<table><colgroup><col style="width:34%"><col style="width:20%"><co
         sugg.length ? h('section', { class: 'panel', id: 'flow-suggestions' },
           h('h2', {}, `Vorgeschlagene Flüsse (${sugg.length})`),
           h('p', { class: 'hint' }, 'Eine Aufgabe schreibt hier ein Datenobjekt in ein System, das es nicht führt. Wie kommen die Daten vom führenden System dorthin?'),
-          sugg.map((s) => {
+          h('div', { class: 'liste' }, sugg.map((s) => {
             let art = 'manuell';
-            return h('div', { class: 'row card', 'data-suggestion': `${s.objectId}|${s.from}|${s.to}` },
+            return h('div', { class: 'item', 'data-suggestion': `${s.objectId}|${s.from}|${s.to}` },
               h('span', { class: 'grow' }, h('b', {}, SL.objById(state, s.objectId).name), `: ${SL.sysById(state, s.from).name} → ${SL.sysById(state, s.to).name}`,
                 h('span', { class: 'hint' }, ` (Aufgabe „${(SL.taskById(state, s.taskId) || {}).name}“)`)),
-              h('select', { onchange: (e) => { art = e.target.value; } }, options(SL.FLUSSARTEN, 'manuell')),
-              h('button', { class: 'primary', onclick: act(() => SL.addFlow(state, { objectId: s.objectId, from: s.from, to: s.to, art })) }, 'Übernehmen'));
-          })) : null,
+              h('select', { 'aria-label': 'Art des Flusses', onchange: (e) => { art = e.target.value; } }, options(SL.FLUSSARTEN, 'manuell')),
+              h('button', { onclick: act(() => SL.addFlow(state, { objectId: s.objectId, from: s.from, to: s.to, art })) }, 'Übernehmen'));
+          }))) : null,
         h('section', { class: 'panel' },
-          h('h2', {}, `Datenflüsse (${state.flows.length})`, mb.list.length ? h('span', { class: 'badge bad' }, `${mb.list.length} Medienbrüche${mb.summe ? `, ${mb.summe} Min./Monat` : ''}`) : null),
-          state.flows.length ? h('div', { class: 'scroll' }, h('table', { class: 'grid', id: 'flows' },
-            h('thead', {}, h('tr', {}, ['Datenobjekt', 'Von', 'Nach', 'Art', 'Häufigkeit', 'Aufwand Min./Monat', ''].map((x) => h('th', {}, x)))),
+          h('h2', {}, `Datenflüsse (${state.flows.length})`, mb.list.length ? h('span', { class: 'chip bad' }, `✗ ${mb.list.length} Medienbrüche${mb.summe ? `, ${mb.summe} Min./Monat` : ''}`) : null),
+          state.flows.length ? h('div', { class: 'table' }, h('table', { id: 'flows' },
+            h('thead', {}, h('tr', {}, ['Datenobjekt', 'Von', 'Nach', 'Art', 'Häufigkeit', 'Aufwand Min./Monat', ''].map((x) => h('th', { class: /^Aufwand/.test(x) ? 'num' : '' }, x)))),
             h('tbody', {}, state.flows.map((fl) => h('tr', { 'data-flow': fl.id, class: SL.isMedienbruch(fl) ? 'dup' : '' },
               h('td', {}, h('select', { k: `fl-o-${fl.id}`, onchange: act((e) => SL.updateFlow(state, fl.id, { objectId: e.target.value })) }, objOptions(fl.objectId))),
               h('td', {}, h('select', { k: `fl-f-${fl.id}`, onchange: act((e) => SL.updateFlow(state, fl.id, { from: e.target.value })) }, sysOptions(fl.from))),
               h('td', {}, h('select', { k: `fl-t-${fl.id}`, onchange: act((e) => SL.updateFlow(state, fl.id, { to: e.target.value })) }, sysOptions(fl.to))),
               h('td', {}, h('select', { k: `fl-a-${fl.id}`, onchange: act((e) => SL.updateFlow(state, fl.id, { art: e.target.value })) }, options(SL.FLUSSARTEN, fl.art)),
-                SL.isMedienbruch(fl) ? h('span', { class: 'badge bad' }, 'Medienbruch') : null),
+                SL.isMedienbruch(fl) ? h('span', { class: 'chip bad' }, '✗ Medienbruch') : null),
               h('td', {}, h('select', { k: `fl-h-${fl.id}`, onchange: act((e) => SL.updateFlow(state, fl.id, { haeufigkeit: e.target.value })) }, options(SL.HAEUFIGKEITEN, fl.haeufigkeit))),
-              h('td', {}, SL.isMedienbruch(fl) ? h('input', { type: 'number', min: 0, step: 5, k: `fl-m-${fl.id}`, 'data-aufwand': fl.id, value: fl.aufwand == null ? '' : fl.aufwand, 'aria-label': 'Aufwand in Minuten pro Monat',
+              h('td', { class: 'num' }, SL.isMedienbruch(fl) ? h('input', { type: 'number', min: 0, step: 5, k: `fl-m-${fl.id}`, 'data-aufwand': fl.id, value: fl.aufwand == null ? '' : fl.aufwand, 'aria-label': 'Aufwand in Minuten pro Monat',
                 onchange: act((e) => SL.updateFlow(state, fl.id, { aufwand: e.target.value === '' ? null : Math.max(0, Number(e.target.value)) })) }) : h('span', { class: 'hint' }, '–')),
-              h('td', {}, h('button', { class: 'danger', onclick: act(() => SL.removeFlow(state, fl.id)) }, '×'))))))) : h('p', { class: 'hint' }, 'Noch keine Flüsse.'),
-          state.objects.length && sys.length > 1 ? h('div', { class: 'row', id: 'new-flow' },
-            h('select', { 'aria-label': 'Datenobjekt', onchange: (e) => { draft.objectId = e.target.value; } }, objOptions(draft.objectId)),
-            h('select', { 'aria-label': 'Von', onchange: (e) => { draft.from = e.target.value; } }, sysOptions(draft.from)), '→',
-            h('select', { 'aria-label': 'Nach', onchange: (e) => { draft.to = e.target.value; } }, sysOptions(draft.to)),
-            h('select', { 'aria-label': 'Art', onchange: (e) => { draft.art = e.target.value; } }, options(SL.FLUSSARTEN, draft.art)),
-            h('select', { 'aria-label': 'Häufigkeit', onchange: (e) => { draft.haeufigkeit = e.target.value; } }, options(SL.HAEUFIGKEITEN, draft.haeufigkeit)),
+              h('td', {}, h('button', { class: 'danger', 'aria-label': 'Fluss entfernen', onclick: act(() => SL.removeFlow(state, fl.id)) }, 'Entfernen'))))))) : h('p', { class: 'hint' }, 'Hier erscheinen die Datenflüsse zwischen den Systemen. Sie entstehen aus den Vorschlägen oder über „Fluss anlegen“.'),
+          state.objects.length && sys.length > 1 ? h('div', { class: 'row felder', id: 'new-flow' },
+            feld('Datenobjekt', h('select', { onchange: (e) => { draft.objectId = e.target.value; } }, objOptions(draft.objectId))),
+            feld('Von', h('select', { onchange: (e) => { draft.from = e.target.value; } }, sysOptions(draft.from))),
+            feld('Nach', h('select', { onchange: (e) => { draft.to = e.target.value; } }, sysOptions(draft.to))),
+            feld('Art', h('select', { onchange: (e) => { draft.art = e.target.value; } }, options(SL.FLUSSARTEN, draft.art)), ''),
+            feld('Häufigkeit', h('select', { onchange: (e) => { draft.haeufigkeit = e.target.value; } }, options(SL.HAEUFIGKEITEN, draft.haeufigkeit)), ''),
             h('button', { onclick: act(() => SL.addFlow(state, draft)) }, 'Fluss anlegen')) : null),
       ];
     }
@@ -1494,19 +1832,19 @@ ${taskRows ? `<table><colgroup><col style="width:34%"><col style="width:20%"><co
         h('section', { class: 'panel', id: 'ohne-prozess' },
           h('h2', {}, `Ohne Prozess (${none.length})`),
           h('p', { class: 'hint' }, 'Was in keinen Prozess passt, bleibt hier sichtbar: Kandidat für ein neues Branchenmodul.'),
-          none.map((t) => {
+          h('div', { class: 'liste' }, none.map((t) => {
             const sug = SL.suggestProcess(t.schrittRef, f);
-            return h('div', { class: 'row card', 'data-unassigned': t.id },
+            return h('div', { class: 'item', 'data-unassigned': t.id },
               h('span', { class: 'grow' }, t.name, h('span', { class: 'hint' }, ` (${SL.sysById(state, t.systemId).name})`)),
               sug ? h('button', { onclick: act(() => SL.assignTask(state, t.id, sug.prozess, sug.schritt)) }, `Vorschlag: ${f.prozess(sug.prozess).name}`) : null,
               processSelect(t, f, `un-${t.id}`));
-          })),
+          }))),
         f.prozesse.map((p) => {
           const seq = SL.sequence(state, f, p.id);
           return h('section', { class: 'panel', 'data-process': p.id },
-            h('h2', {}, p.name, p.modul ? h('span', { class: 'badge' }, `Modul ${p.modul}`) : null),
+            h('h2', {}, p.name, p.modul ? h('span', { class: 'chip' }, `Modul ${p.modul}`) : null),
             h('p', { class: 'hint' }, 'Schritte: ', p.schritte.map((s) => s.name).join(' → ')),
-            h('div', { class: 'report scroll', html: SL.report.swimlane(state, f, p.id) }),
+            h('div', { class: 'report table', html: SL.report.swimlane(state, f, p.id) }),
             seq.length ? h('details', { class: 'no-print' }, h('summary', {}, 'Reihenfolge und Zuordnung ändern'),
               h('ol', { class: 'seq' }, seq.map((t, i) => h('li', { 'data-seq': t.id }, h('div', { class: 'row' },
                 h('button', { 'aria-label': 'nach oben', disabled: i === 0, onclick: act(() => SL.moveInSequence(state, f, p.id, t.id, -1)) }, '↑'),
@@ -1529,7 +1867,7 @@ ${taskRows ? `<table><colgroup><col style="width:34%"><col style="width:20%"><co
         h('section', { class: 'panel' },
           h('h2', {}, 'Neue Software'),
           h('p', { class: 'hint' }, 'Das Werkzeug entscheidet nichts, es macht die Entscheidung vollständig: je Aufgabe wandert, bleibt, entfällt oder unklar, je Datenobjekt das künftig führende System.'),
-          h('div', { class: 'row' }, catalogSelect('cat-ziel'),
+          h('div', { class: 'row felder' }, feld('Software aus dem Katalog', catalogSelect('cat-ziel')),
             h('button', { id: 'add-ziel-cat', onclick: act(() => {
               const v = document.getElementById('cat-ziel').value;
               if (!v) throw new Error('Bitte erst eine Software wählen.');
@@ -1537,15 +1875,15 @@ ${taskRows ? `<table><colgroup><col style="width:34%"><col style="width:20%"><co
               const s = SL.addSystem(state, { name: sw.name, art: sw.art, zweck: sw.zweck, catalogId: sw.id });
               SL.setZielsystem(state, s.id, true);
             }) }, 'Als Zielsystem anlegen')),
-          h('div', { class: 'row' },
-            h('input', { type: 'text', id: 'ziel-name', class: 'grow', placeholder: 'oder Name der neuen Software', oninput: (e) => { free.name = e.target.value; } }),
+          h('div', { class: 'row felder' },
+            feld('oder Name der neuen Software', h('input', { type: 'text', id: 'ziel-name', oninput: (e) => { free.name = e.target.value; } })),
             h('button', { id: 'add-ziel', onclick: act(() => { const s = SL.addSystem(state, { name: free.name, art: 'cloud' }); SL.setZielsystem(state, s.id, true); }) }, 'Als Zielsystem anlegen')),
-          h('div', { class: 'checks' }, state.systems.map((s) => h('label', {},
-            h('input', { type: 'checkbox', 'data-ziel-system': s.id, checked: !!s.zielsystem, onchange: act((e) => SL.setZielsystem(state, s.id, e.target.checked)) }), ' ', s.name, ' ist Zielsystem')))),
+          h('div', { class: 'checks' }, state.systems.map((s) => h('label', { class: 'choice' },
+            h('input', { type: 'checkbox', 'data-ziel-system': s.id, checked: !!s.zielsystem, onchange: act((e) => SL.setZielsystem(state, s.id, e.target.checked)) }), `${s.name} ist Zielsystem`)))),
         ziel.length ? [
           h('section', { class: 'panel' },
             h('h2', {}, 'Aufgaben: Ist und Ziel'),
-            h('div', { class: 'scroll' }, h('table', { class: 'grid', id: 'ziel-aufgaben' },
+            h('div', { class: 'table' }, h('table', { id: 'ziel-aufgaben' },
               h('thead', {}, h('tr', {}, ['Aufgabe', 'Ist: System', 'Entscheidung', 'Ziel: System'].map((x) => h('th', {}, x)))),
               h('tbody', {}, tasks.map((t) => h('tr', { 'data-ziel-task': t.id },
                 h('td', {}, t.name), h('td', {}, SL.sysById(state, t.systemId).name),
@@ -1553,11 +1891,11 @@ ${taskRows ? `<table><colgroup><col style="width:34%"><col style="width:20%"><co
                 h('td', { class: t.ziel === 'wandert' ? 'lead' : '' }, targetOf(t)))))))),
           h('section', { class: 'panel' },
             h('h2', {}, 'Datenobjekte: heute und künftig führend'),
-            h('div', { class: 'scroll' }, h('table', { class: 'grid', id: 'ziel-objekte' },
+            h('div', { class: 'table' }, h('table', { id: 'ziel-objekte' },
               h('thead', {}, h('tr', {}, ['Datenobjekt', 'Ist: führend', 'Ziel: führend'].map((x) => h('th', {}, x)))),
               h('tbody', {}, state.objects.map((o) => h('tr', { 'data-ziel-object': o.id },
                 h('td', {}, o.name),
-                h('td', {}, SL.leaders(state, o.id).map((id) => SL.sysById(state, id).name).join(', ') || h('span', { class: 'badge warn' }, 'keines')),
+                h('td', {}, SL.leaders(state, o.id).map((id) => SL.sysById(state, id).name).join(', ') || h('span', { class: 'chip warn' }, '? keines')),
                 h('td', {}, h('select', { k: `zf-${o.id}`, onchange: act((e) => SL.setZielFuehrend(state, o.id, e.target.value)) },
                   h('option', { value: '' }, '– offen –'),
                   [...ziel, ...ist].map((s) => h('option', { value: s.id, selected: o.zielFuehrend === s.id }, s.name + (s.zielsystem ? ' (neu)' : ''))))))))))),
@@ -1600,14 +1938,14 @@ ${taskRows ? `<table><colgroup><col style="width:34%"><col style="width:20%"><co
         h('section', { class: 'panel', id: 'durchgang-befunde' },
           h('h2', {}, 'Was der Mandant anders sieht'),
           h('h3', {}, `Anders (${d.anders.length})`),
-          d.anders.map((x) => h('div', { class: 'card flag-anders', 'data-anders': x.item.id }, h('div', { class: 'row' },
+          d.anders.map((x) => h('div', { class: 'item flag-anders', 'data-anders': x.item.id }, h('div', { class: 'row' },
             h('span', { class: 'grow' }, h('b', {}, x.label), `: ${x.item.durchgang.text || '(ohne Text)'}`),
             h('button', { onclick: done(x.item) }, 'Erledigt')))),
           h('h3', {}, `Unsicher (${d.unsicher.length})`),
-          d.unsicher.map((x) => h('div', { class: 'card flag-unsicher', 'data-unsicher': x.item.id }, h('div', { class: 'row' },
+          d.unsicher.map((x) => h('div', { class: 'item flag-unsicher', 'data-unsicher': x.item.id }, h('div', { class: 'row' },
             h('span', { class: 'grow' }, x.label), h('button', { onclick: done(x.item) }, 'Geklärt')))),
           h('h3', {}, `Ergänzungen (${d.ergaenzungen.length})`),
-          d.ergaenzungen.map((e) => h('div', { class: 'card', 'data-ergaenzung': e.id }, h('div', { class: 'row' },
+          d.ergaenzungen.map((e) => h('div', { class: 'item', 'data-ergaenzung': e.id }, h('div', { class: 'row' },
             h('span', { class: 'grow' }, e.text),
             h('button', { onclick: act(() => { SL.addSystem(state, { name: e.text, art: 'lokal', zweck: 'vom Mandanten ergänzt' }); e.erledigt = true; }) }, 'Als System anlegen'),
             h('button', { onclick: act(() => { e.erledigt = true; }) }, 'Erledigt'))))),
@@ -1624,7 +1962,7 @@ ${taskRows ? `<table><colgroup><col style="width:34%"><col style="width:20%"><co
           h('h2', {}, 'Bericht und Export'),
           h('div', { class: 'row' },
             h('button', { class: 'primary', id: 'print', onclick: () => window.print() }, 'Drucken'),
-            h('button', { id: 'dl-report', onclick: () => download(`${fileBase()}.bericht.html`, SL.report.reportDocument(state, f), 'text/html') }, 'Bericht als HTML'),
+            h('button', { id: 'dl-report', onclick: () => download(`${fileBase()}.bericht.html`, SL.report.reportDocument(state, f, document.getElementById('sl-stil').textContent), 'text/html') }, 'Bericht als HTML'),
             h('button', { id: 'dl-matrix', onclick: () => download(`${fileBase()}-matrix.csv`, bom + SL.matrixCsv(state), 'text/csv') }, 'Matrix als CSV'),
             h('button', { id: 'dl-tasks', onclick: () => download(`${fileBase()}-aufgaben.csv`, bom + SL.aufgabenCsv(state, f), 'text/csv') }, 'Aufgaben als CSV'),
             h('button', { onclick: () => download(`${fileBase()}.landkarte.json`, SL.toFile(state), 'application/json') }, 'Landkarte speichern (JSON)'))),
@@ -1673,12 +2011,12 @@ ${taskRows ? `<table><colgroup><col style="width:34%"><col style="width:20%"><co
         const add = () => { if (draft.trim()) { st.ergaenzungen.push(draft.trim()); save(); render(); const i = document.getElementById('erg-input'); if (i) i.focus(); } };
         const firstOpen = list.findIndex((x) => x.kind !== 'ergaenzungen' && !st.answers[x.key]);
         body = [
-          h('div', { class: 'kicker' }, 'Zum Schluss'),
+          h('div', { class: 'label' }, 'Zum Schluss'),
           h('div', { class: 'title' }, 'Welche Programme, Listen oder Ordner nutzen Sie noch?'),
-          h('p', { class: 'intro' }, 'Alles, was oben nicht vorkam: auch Excel-Listen, Papierordner, Notizbücher oder Postfächer.'),
+          h('p', { class: 'hint' }, 'Alles, was oben nicht vorkam: auch Excel-Listen, Papierordner, Notizbücher oder Postfächer.'),
           h('ul', { id: 'erg-list' }, st.ergaenzungen.map((e, i) => h('li', {}, e, ' ', h('button', { class: 'link', 'aria-label': `${e} entfernen`, onclick: () => { st.ergaenzungen.splice(i, 1); save(); render(); } }, 'entfernen')))),
-          h('div', { class: 'row' },
-            h('input', { type: 'text', id: 'erg-input', class: 'grow', placeholder: 'z. B. Excel-Liste mit Preisen', oninput: (e) => { draft = e.target.value; }, onkeydown: (e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } } }),
+          h('div', { class: 'row felder' },
+            feld('Programm, Liste oder Ordner', h('input', { type: 'text', id: 'erg-input', placeholder: 'z. B. Excel-Liste mit Preisen', oninput: (e) => { draft = e.target.value; }, onkeydown: (e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } } })),
             h('button', { id: 'erg-add', onclick: add }, 'Hinzufügen')),
           h('hr', {}),
           firstOpen >= 0 ? h('p', {}, `Noch ${p.total - p.done} Karten ohne Antwort. `, h('button', { class: 'link', id: 'goto-open', onclick: () => go(firstOpen) }, 'Zur ersten offenen Karte')) : h('p', {}, 'Alle Karten sind beantwortet. Danke!'),
@@ -1687,21 +2025,21 @@ ${taskRows ? `<table><colgroup><col style="width:34%"><col style="width:20%"><co
             download(`durchgang-${SL.today()}.durchgang.json`, JSON.stringify(result, null, 2), 'application/json');
             toast('Ergebnis gespeichert. Bitte schicken Sie die Datei an Ihre Kanzlei.');
           } }, 'Ergebnis speichern'),
-          h('p', { class: 'intro' }, 'Es entsteht eine Datei, die Sie Ihrer Kanzlei schicken. Nichts wird automatisch übertragen.'),
+          h('p', { class: 'hint' }, 'Es entsteht eine Datei, die Sie Ihrer Kanzlei schicken. Nichts wird automatisch übertragen.'),
         ];
       } else {
         const s = c.system;
         body = [
           c.kind === 'system'
-            ? [h('div', { class: 'kicker' }, `Programm oder Ablage · ${SL.ARTEN[s.art]}`),
+            ? [h('div', { class: 'label' }, `Programm oder Ablage · ${SL.ARTEN[s.art]}`),
               h('div', { class: 'title' }, s.name),
               s.zweck ? h('p', {}, h('b', {}, 'Wofür: '), s.zweck) : null,
               s.rollen.length ? h('p', {}, h('b', {}, 'Wer arbeitet damit: '), s.rollen.join(', ')) : null,
-              h('p', { class: 'intro' }, 'Nutzen Sie das so?')]
-            : [h('div', { class: 'kicker' }, `Aufgabe in ${s.name}`),
+              h('p', { class: 'frage' }, 'Nutzen Sie das so?')]
+            : [h('div', { class: 'label' }, `Aufgabe in ${s.name}`),
               h('div', { class: 'title' }, c.task.name),
               h('p', {}, h('b', {}, 'Wer: '), c.task.rolle || '–', ' · ', h('b', {}, 'Wie oft: '), SL.HAEUFIGKEITEN[c.task.haeufigkeit]),
-              h('p', { class: 'intro' }, `Erledigen Sie das so in ${s.name}?`)],
+              h('p', { class: 'frage' }, `Erledigen Sie das so in ${s.name}?`)],
           h('div', { class: 'answers', role: 'group', 'aria-label': 'Antwort' },
             h('button', { 'data-answer': 'ok', 'aria-pressed': String(!!a && a.wert === 'ok'), onclick: () => choose('ok') }, '✓ So ist es'),
             h('button', { 'data-answer': 'anders', 'aria-pressed': String(!!a && a.wert === 'anders'), onclick: () => choose('anders') }, '✗ Anders'),
@@ -1714,15 +2052,17 @@ ${taskRows ? `<table><colgroup><col style="width:34%"><col style="width:20%"><co
         ];
       }
       app.replaceChildren(h('div', { class: 'walk' },
-        h('h1', {}, 'Ihre Software-Landkarte'),
-        h('p', { class: 'intro' }, payload.betrieb ? `${payload.betrieb}: ` : '', 'Ihre Kanzlei hat eingetragen, was sie über Ihre Programme und Abläufe weiß. Bestätigen Sie jede Karte oder sagen Sie, was anders ist. Ihr Stand bleibt in diesem Browser gespeichert; Sie können jederzeit unterbrechen.'),
+        h('header', { class: 'masthead' },
+          h('div', { class: 'label' }, h('span', {}, payload.betrieb || 'Durchgang'), h('span', {}, `Karte ${st.index + 1} von ${list.length}`)),
+          h('h1', {}, 'Ihre Software-Landkarte'),
+          h('p', { class: 'sub' }, 'Ihre Kanzlei hat eingetragen, was sie über Ihre Programme und Abläufe weiß. Bestätigen Sie jede Karte oder sagen Sie, was anders ist. Ihr Stand bleibt in diesem Browser gespeichert; Sie können jederzeit unterbrechen.')),
         h('div', { class: 'progress', role: 'progressbar', 'aria-label': 'Fortschritt', 'aria-valuemin': 0, 'aria-valuemax': p.total, 'aria-valuenow': p.done },
           h('div', { style: `width:${p.percent}%` })),
-        h('div', { class: 'keys', id: 'progress-text' }, `${p.done} von ${p.total} beantwortet · Karte ${st.index + 1} von ${list.length}`),
-        h('div', { class: 'bigcard', 'data-card': c.key }, body),
+        h('div', { class: 'step', id: 'progress-text' }, `${p.done} von ${p.total} beantwortet · Karte ${st.index + 1} von ${list.length}`),
+        h('div', { class: 'card', 'data-card': c.key }, body),
         h('div', { class: 'nav' },
           h('button', { id: 'prev', disabled: st.index === 0, onclick: () => go(st.index - 1) }, '← Zurück'),
-          h('span', { class: 'keys' }, 'Tasten: 1 = so ist es, 2 = anders, 3 = unsicher, Pfeile = blättern'),
+          h('span', { class: 'hint' }, 'Tasten: 1 = so ist es, 2 = anders, 3 = unsicher, Pfeile = blättern'),
           h('button', { id: 'next', disabled: st.index === list.length - 1, onclick: () => go(st.index + 1) }, 'Weiter →'))));
     }
 
